@@ -1,7 +1,8 @@
 # ClassMate — Client (Flutter)
 
-One codebase that targets **Android, iOS, Web, Windows, and macOS**, talking to the
-ClassMate REST API on `http://localhost:3000`.
+Flutter client for **Android, iOS, Windows, and macOS**, talking to the ClassMate REST
+API on `http://localhost:3000`. The browser app is served by the Node server; do not run
+the legacy Flutter web target.
 
 ## Requirements
 - Flutter SDK (stable — built and tested with **3.47.7**)
@@ -11,9 +12,6 @@ ClassMate REST API on `http://localhost:3000`.
 
 ```bash
 flutter pub get
-
-# Web (Edge) — works out of the box
-flutter run -d edge
 
 # Desktop (needs the Visual Studio "Desktop development with C++" workload)
 flutter run -d windows
@@ -25,7 +23,7 @@ flutter run -d <device-id>
 The API base URL defaults to `http://localhost:3000/api`. Override it with:
 
 ```bash
-flutter run -d edge --dart-define=API_BASE_URL=http://192.168.1.10:3000/api
+flutter run -d <device-id> --dart-define=API_BASE_URL=http://192.168.1.10:3000/api
 ```
 
 ## Checks
@@ -56,12 +54,8 @@ Two machine-level settings can get in the way; both are fixable:
 
 1. **Developer Mode** — building with plugins needs symlink support:
    *Settings → System → For developers → Developer Mode → On.*
-2. **Smart App Control / WDAC** can block Flutter's `font-subset.exe` during a
-   **release** web build. Work around it with:
-   ```bash
-   flutter build web --release --no-tree-shake-icons
-   ```
-   Debug runs (`flutter run`) are unaffected.
+2. **Smart App Control / WDAC** can block Flutter build tools. Use a debug run while
+   diagnosing the restriction.
 
 ## Demo account
 

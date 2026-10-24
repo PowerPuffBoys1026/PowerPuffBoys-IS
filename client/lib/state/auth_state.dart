@@ -56,6 +56,25 @@ class AuthState extends ChangeNotifier {
         ));
   }
 
+  Future<void> updateProfile({
+    required String fullName,
+    String? studentNo,
+    String? course,
+  }) async {
+    error = null;
+    try {
+      user = await _api.updateProfile(
+        fullName: fullName,
+        studentNo: studentNo,
+        course: course,
+      );
+      notifyListeners();
+    } on ApiException catch (e) {
+      error = e.message;
+      rethrow;
+    }
+  }
+
   Future<bool> _run(Future<AuthResult> Function() action) async {
     busy = true;
     error = null;

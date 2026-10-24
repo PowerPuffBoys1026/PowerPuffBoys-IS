@@ -31,6 +31,13 @@ function attendanceSummary(userId) {
     const attendanceRate = counted ? Math.round((row.present / counted) * 1000) / 10 : null;
     const absenceRate = counted ? Math.round((row.absent / counted) * 1000) / 10 : null;
 
+    // Standard semester cutoff calculation (default 20% limit ~ 5 allowed absences per course)
+    const maxAllowedAbsences = Math.max(3, Math.floor((config.attendanceThreshold / 100) * 28));
+    const safeMissesLeft = Math.max(0, maxAllowedAbsences - row.absent);
+    const healthStatus = (absenceRate !== null && absenceRate >= config.attendanceThreshold) || safeMissesLeft === 0
+      ? 'critical'
+      : (safeMissesLeft <= 1 ? 'warning' : 'safe');
+
     return {
       subjectId: row.id,
       code: row.code,
@@ -43,7 +50,9 @@ function attendanceSummary(userId) {
       counted,
       attendanceRate,
       absenceRate,
-      warning: absenceRate !== null && absenceRate >= config.attendanceThreshold,
+      safeMissesLeft,
+      healthStatus,
+      warning: (absenceRate !== null && absenceRate >= config.attendanceThreshold) || row.absent >= maxAllowedAbsences,
     };
   });
 }

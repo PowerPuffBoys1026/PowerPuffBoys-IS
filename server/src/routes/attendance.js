@@ -4,6 +4,7 @@ const { z } = require('zod');
 const db = require('../db');
 const { validate } = require('../utils/validate');
 const { HttpError } = require('../utils/errors');
+const recycleBin = require('../services/recycle_bin');
 const { requireAuth } = require('../middleware/auth');
 const { attendanceSummary } = require('../services/attendance');
 
@@ -132,8 +133,8 @@ router.put('/:id', (req, res) => {
 router.delete('/:id', (req, res) => {
   const id = Number(req.params.id);
   ownedRecord(id, req.userId);
-  db.prepare('DELETE FROM attendance_records WHERE id = ?').run(id);
-  res.status(204).end();
+  const recycleBinId = recycleBin.trashRecord(req.userId, 'attendance', id);
+  res.json({ data: { success: true, recycleBinId } });
 });
 
 module.exports = router;

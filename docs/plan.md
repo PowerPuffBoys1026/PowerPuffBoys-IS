@@ -17,8 +17,9 @@ ClassMate lets a student:
 3. Build a **weekly timetable** of class slots.
 4. **Mark attendance** with one tap and watch their absence % per subject.
 5. Track **school works** (assignments, quizzes, exams) with due dates.
-6. Get **reminders** before class and before deadlines.
-7. See a **dashboard** of today's classes, upcoming deadlines, and attendance warnings.
+6. Add private **file attachments** to works and notes, including images, PDFs, Word files, PowerPoint files, and text docs.
+7. Get **reminders** before class and before deadlines.
+8. See a **dashboard** of today's classes, upcoming deadlines, and attendance warnings.
 
 ### Why three platforms
 - **Mobile** — the everyday device: reminders fire here, one-tap attendance marking, "next class soon".
@@ -30,20 +31,22 @@ ClassMate lets a student:
 ## 2. Architecture
 
 ```
+┌─────────────────────────────┐   ┌─────────────────────────────┐
+│ Browser app                 │   │ Flutter client              │
+│ server/public · localhost   │   │ Android · iOS · Windows     │
+│                             │   │ · macOS                     │
+└──────────────┬──────────────┘   └──────────────┬──────────────┘
+               └───────────────┬────────────────┘
+                               │ REST / JSON + JWT
+                               ▼
 ┌──────────────────────────────────────────────────────────────┐
-│  Flutter client (one codebase)                               │
-│  Android · iOS · Web · Windows · macOS                       │
-└───────────────┬──────────────────────────────────────────────┘
-                │  REST / JSON  +  Authorization: Bearer <JWT>
-                ▼
+│ Node.js + Express API · http://localhost:3000                │
+│ Serves the browser app; handles routing, auth, and logic     │
+└──────────────────────────────┬───────────────────────────────┘
+                               │ better-sqlite3
+                               ▼
 ┌──────────────────────────────────────────────────────────────┐
-│  Node.js + Express REST API   (http://localhost:3000)        │
-│  Routing · Validation · Auth middleware · Business logic     │
-└───────────────┬──────────────────────────────────────────────┘
-                │  better-sqlite3 (synchronous, file-based)
-                ▼
-┌──────────────────────────────────────────────────────────────┐
-│  SQLite database file   (server/data/classmate.db)           │
+│ SQLite database file · server/data/classmate.db             │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -51,7 +54,8 @@ ClassMate lets a student:
 
 | Layer | Choice |
 |---|---|
-| Client | Flutter (Dart) — `http`/`dio`, `provider`, `flutter_secure_storage`, `flutter_local_notifications`, `table_calendar` |
+| Clients | Browser app: HTML/CSS/JavaScript in `server/public`; Flutter (Dart) for Android, iOS, Windows, and macOS |
+| Flutter packages | `http`/`dio`, `provider`, `flutter_secure_storage`, `flutter_local_notifications`, `table_calendar` |
 | API | Node.js 22 LTS + Express, `zod` validation, `cors`, `dotenv` |
 | Auth | JWT + `bcrypt` password hashing |
 | Database | SQLite via `better-sqlite3` |
@@ -63,7 +67,7 @@ ClassMate lets a student:
 
 ```
 PowerPuffBoys/
-├── client/                 Flutter app (all platforms)
+├── client/                 Flutter app (Android, iOS, Windows, macOS)
 │   ├── lib/
 │   │   ├── main.dart
 │   │   ├── api/            API client + endpoints
@@ -159,6 +163,7 @@ erDiagram
 - `attendance_records.status` ∈ `present | absent | late | cancelled`.
 - `school_works.type` ∈ `assignment | quiz | exam | project`; `priority` ∈ `low | medium | high`;
   `status` ∈ `todo | doing | done`.
+- Uploaded attachments are now scoped to each user's school works and notes, stored privately outside the public assets folder, and removed when the related record is deleted or purged.
 - `subject_id` on `school_works` is nullable (a work can be unassigned).
 - **Attendance % is computed, never stored** — `present / (present + absent + late)`
   per subject. This keeps the number honest if records are edited.
@@ -178,6 +183,7 @@ All routes except register/login require `Authorization: Bearer <token>`.
 | POST | `/auth/register` | Create account → returns JWT + user |
 | POST | `/auth/login` | Authenticate → returns JWT + user |
 | GET | `/auth/me` | Current user profile |
+| PUT | `/auth/me` | Update current user's name, student number, and course |
 
 ### Subjects
 | Method | Path | Description |

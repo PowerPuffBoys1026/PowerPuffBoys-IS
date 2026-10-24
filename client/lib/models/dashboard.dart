@@ -23,17 +23,29 @@ class DashboardClass {
   final String? room;
   final String? modality;
 
+  Map<String, dynamic> toJson() => {
+    'slotId': slotId,
+    'subjectId': subjectId,
+    'code': code,
+    'title': title,
+    'color': color,
+    'startTime': startTime,
+    'endTime': endTime,
+    'room': room,
+    'modality': modality,
+  };
+
   factory DashboardClass.fromJson(Map<String, dynamic> json) => DashboardClass(
-        slotId: json['slotId'] as int,
-        subjectId: json['subjectId'] as int,
-        code: json['code'] as String,
-        title: json['title'] as String,
-        color: json['color'] as String? ?? '#4F46E5',
-        startTime: json['startTime'] as String,
-        endTime: json['endTime'] as String,
-        room: json['room'] as String?,
-        modality: json['modality'] as String?,
-      );
+    slotId: json['slotId'] as int,
+    subjectId: json['subjectId'] as int,
+    code: json['code'] as String,
+    title: json['title'] as String,
+    color: json['color'] as String? ?? '#4F46E5',
+    startTime: json['startTime'] as String,
+    endTime: json['endTime'] as String,
+    room: json['room'] as String?,
+    modality: json['modality'] as String?,
+  );
 }
 
 class DueSoonWork {
@@ -59,17 +71,31 @@ class DueSoonWork {
   final String? color;
   final bool overdue;
 
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'type': type,
+    'dueAt': dueAt?.toIso8601String(),
+    'priority': priority,
+    'status': status,
+    'subjectCode': subjectCode,
+    'color': color,
+    'overdue': overdue,
+  };
+
   factory DueSoonWork.fromJson(Map<String, dynamic> json) => DueSoonWork(
-        id: json['id'] as int,
-        title: json['title'] as String,
-        type: json['type'] as String? ?? 'assignment',
-        dueAt: json['dueAt'] != null ? DateTime.tryParse(json['dueAt'] as String)?.toLocal() : null,
-        priority: json['priority'] as String? ?? 'medium',
-        status: json['status'] as String? ?? 'todo',
-        subjectCode: json['subjectCode'] as String?,
-        color: json['color'] as String?,
-        overdue: json['overdue'] as bool? ?? false,
-      );
+    id: json['id'] as int,
+    title: json['title'] as String,
+    type: json['type'] as String? ?? 'assignment',
+    dueAt: json['dueAt'] != null
+        ? DateTime.tryParse(json['dueAt'] as String)?.toLocal()
+        : null,
+    priority: json['priority'] as String? ?? 'medium',
+    status: json['status'] as String? ?? 'todo',
+    subjectCode: json['subjectCode'] as String?,
+    color: json['color'] as String?,
+    overdue: json['overdue'] as bool? ?? false,
+  );
 }
 
 class DashboardData {
@@ -86,6 +112,18 @@ class DashboardData {
   final List<DashboardClass> classes;
   final List<DueSoonWork> dueSoon;
   final List<AttendanceSummary> attendanceWarnings;
+
+  Map<String, dynamic> toJson() => {
+    'data': {
+      'date': date,
+      'dayName': dayName,
+      'classes': classes.map((item) => item.toJson()).toList(),
+      'dueSoon': dueSoon.map((item) => item.toJson()).toList(),
+      'attendanceWarnings': attendanceWarnings
+          .map((item) => item.toJson())
+          .toList(),
+    },
+  };
 
   factory DashboardData.fromJson(Map<String, dynamic> json) {
     final data = json['data'] as Map<String, dynamic>;
