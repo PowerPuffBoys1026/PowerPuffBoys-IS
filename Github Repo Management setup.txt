@@ -1,0 +1,195 @@
+
+complete_git_and_github_guide.md
+100%
+# Comprehensive Guide: Setting Up Git & Working with GitHub
+
+This guide covers everything you need to get started with Git on your personal computer and effectively manage repositories on GitHub.
+
+## Part 1: How to Configure Git on Your PC
+
+### Step 1: Download and Install Git
+
+1. Visit the official website: [git-scm.com](https://git-scm.com/?utm_source=gemini).
+
+2. Download the appropriate installer for your operating system (Windows, macOS, or Linux).
+
+3. Run the installer. During installation, you can accept the default configurations provided by the setup wizard.
+
+### Step 2: Open Terminal or Command Prompt
+
+Launch your preferred command-line interface:
+
+* **Windows:** Open **Git Bash** (installed with Git) or **PowerShell**.
+
+* **macOS:** Open **Terminal** (`Cmd + Space`, search for *Terminal*).
+
+* **Linux:** Open your system terminal (`Ctrl + Alt + T`).
+
+### Step 3: Set Your Global Identity
+
+Git tags every commit with your username and email address. Set these globally so all future repositories inherit them.
+
+**Set your full name:**
+
+```
+git config --global user.name "Your Full Name"
+
+```
+
+**Set your email address:**
+*(Use the email address linked to your GitHub account)*
+
+```
+git config --global user.email "your.email@example.com"
+
+```
+
+### Step 4: Configure Default Branch Name
+
+Set `main` as the default branch name for all newly initialized local repositories:
+
+```
+git config --global init.defaultBranch main
+
+```
+
+### Step 5: Verify Your Configuration
+
+Run the following command to review all active global settings:
+
+```
+git config --list
+
+```
+
+**Expected Verification:** Confirm that `user.name`, `user.email`, and `init.defaultBranch` appear in the output list with your specified values.
+
+## Part 2: How to Utilize GitHub Repositories
+
+### Step 1: Create or Locate a Repository on GitHub
+
+1. Log in to [GitHub](https://github.com?utm_source=gemini).
+
+2. To create a new repository:
+
+   * Click the **`+`** icon in the top-right corner.
+
+   * Select **New repository**.
+
+   * Give it a repository name, select Visibility (**Public** or **Private**), and click **Create repository**.
+
+### Step 2: Clone the Repository to Your PC
+
+1. On the GitHub repository page, click the green **Code** button and copy the HTTPS URL.
+
+2. In your terminal, navigate to the folder where you want to store your project:
+
+   ```
+   cd path/to/your/folder
+   
+   ```
+
+3. Clone the remote repository:
+
+   ```
+   git clone https://github.com/your-username/your-repository-name.git
+   
+   ```
+
+4. Move into the newly created project directory:
+
+   ```
+   cd your-repository-name
+   
+   ```
+
+**Verification:** Run `git status`. You should see `On branch main` and `Your branch is up to date with 'origin/main'`.
+
+### Step 3: Create a Feature Branch
+
+Avoid making changes directly on the `main` branch. Create a dedicated branch for new features or bug fixes:
+
+```
+git checkout -b feature/my-new-feature
+
+```
+
+**Verification:** Run `git branch`. An asterisk (`*`) will indicate the branch you are currently working on.
+
+### Step 4: Make Changes and Stage Files
+
+Create, edit, or delete files within your local project directory using your code editor.
+
+1. Check which files have been modified:
+
+   ```
+   git status
+   
+   ```
+
+2. Stage all changed files for committing:
+
+   ```
+   git add .
+   
+   ```
+
+   *(To stage a specific file, use `git add filename.ext`)*
+
+### Step 5: Commit Your Changes Locally
+
+Save your staged changes with a concise commit message explaining what was done:
+
+```
+git commit -m "Add feature details and updated documentation"
+
+```
+
+**Verification:** Run `git status` to ensure your working tree is clean.
+
+### Step 6: Push Your Branch to GitHub
+
+Upload your local branch and commit history to GitHub:
+
+```
+git push -u origin feature/my-new-feature
+
+```
+
+### Step 7: Open a Pull Request (PR)
+
+1. Go to your repository on [GitHub](https://github.com?utm_source=gemini).
+
+2. You will see a banner prompt: **Compare & pull request**. Click it.
+
+3. Write a clear title and description of your changes.
+
+4. Click **Create pull request**.
+
+### Step 8: Merge PR and Sync Local Code
+
+1. On GitHub, after reviewing (or receiving approval), click **Merge pull request** and confirm the merge.
+
+2. Switch back to your local terminal and update your local `main` branch:
+
+   ```
+   git checkout main
+   git pull origin main
+   
+   ```
+
+**Verification:** Run `git log -n 1` to verify that the latest merge commit appears at the top of your history.
+
+## Quick Reference Command Sheet
+
+| **Command** | **Description** | 
+| `git config --global user.name "Name"` | Set global Git name | 
+| `git config --global user.email "email"` | Set global Git email | 
+| `git clone <URL>` | Download remote repo to local machine | 
+| `git status` | Check status of working directory | 
+| `git checkout -b <branch>` | Create and switch to new branch | 
+| `git add .` | Stage all updated files | 
+| `git commit -m "message"` | Save staged changes with a message | 
+| `git push -u origin <branch>` | Upload local branch to GitHub | 
+| `git pull origin main` | Download latest updates from remote main | 
+Displaying complete_git_and_github_guide.md.

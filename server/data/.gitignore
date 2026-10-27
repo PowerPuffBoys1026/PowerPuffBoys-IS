@@ -1,0 +1,4 @@
+# Ignore local SQLite database files (created at runtime by the server).
+# This file is kept so the folder exists after a fresh clone.
+*
+!.gitignore
