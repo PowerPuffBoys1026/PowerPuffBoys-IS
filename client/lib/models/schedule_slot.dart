@@ -9,7 +9,9 @@ class ScheduleSlot {
     required this.startTime,
     required this.endTime,
     this.room,
+    this.building,
     this.modality,
+    this.weekPattern = 'every',
   });
 
   final int id;
@@ -21,7 +23,24 @@ class ScheduleSlot {
   final String startTime;
   final String endTime;
   final String? room;
+  final String? building;
   final String? modality;
+  final String weekPattern;
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'subjectId': subjectId,
+        'subjectCode': subjectCode,
+        'subjectTitle': subjectTitle,
+        'color': color,
+        'dayOfWeek': dayOfWeek,
+        'startTime': startTime,
+        'endTime': endTime,
+        'room': room,
+        'building': building,
+        'modality': modality,
+        'weekPattern': weekPattern,
+      };
 
   factory ScheduleSlot.fromJson(Map<String, dynamic> json) => ScheduleSlot(
         id: json['id'] as int,
@@ -33,6 +52,8 @@ class ScheduleSlot {
         startTime: json['startTime'] as String,
         endTime: json['endTime'] as String,
         room: json['room'] as String?,
+        building: json['building'] as String?,
         modality: json['modality'] as String?,
+        weekPattern: json['weekPattern'] as String? ?? 'every',
       );
 }

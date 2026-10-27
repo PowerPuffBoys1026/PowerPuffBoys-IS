@@ -49,14 +49,14 @@ PowerPuffBoys/
 │   ├── plan.md              technical plan (ERD + API reference)
 │   └── team-notes.md        shared scratchpad + conflict drill
 ├── server/                  Node + Express REST API (scaffolded + tested)
-├── client/                  Flutter app (all platforms, wired to the API)
+├── client/                  Flutter app (Android, iOS, Windows, macOS)
 └── profiles/                one page per team member
 ```
 
 ## Current status
 
-Repo scaffolding, the **backend**, and the **Flutter client** are all in place. The
-Node + Express REST API is verified (`npm run smoke` → 25/25 checks passing) with SQLite
-persistence and JWT auth, and the Flutter client (`client/`) is wired to it with login,
-dashboard, schedule, attendance, school-works, and subjects screens (verified on Web).
-See [`docs/kickoff.md`](docs/kickoff.md) to get set up.
+The Node + Express server provides the browser app at `http://localhost:3000/` and the
+REST API at `/api`. Flutter remains the Android, iOS, Windows, and macOS client; its
+legacy Web target has been removed so the redesigned browser app is the only website.
+See [`server/README.md`](server/README.md) to launch the site and
+[`docs/kickoff.md`](docs/kickoff.md) for project setup.

@@ -22,27 +22,29 @@ to view their weekly timetable, mark their attendance with a single tap, monitor
 absence percentage per subject against a cutoff, and track school works (assignments,
 quizzes, and exams) with reminders before they are due.
 
-The application is built as a single codebase that runs on Mobile (Android/iOS), Web
-browsers, and Desktop (Windows/macOS), all backed by a RESTful API running on a local
-development server. The target audience is secondary and tertiary students who need a
-simple, fast, and reliable way to stay on top of their academic responsibilities.
+ClassMate provides a redesigned browser app served by the Node.js server and a Flutter
+client for Mobile (Android/iOS) and Desktop (Windows/macOS). Both use the same RESTful
+API and authenticated account. The target audience is secondary and tertiary students
+who need a simple, fast, and reliable way to stay on top of their academic
+responsibilities.
 
 1.2 Core Objectives
-  - Develop a unified cross-platform client supporting Mobile (iOS/Android), Web
-    browsers, and Desktop environments (Windows/macOS).
+  - Deliver a browser app through the local Node.js server and a Flutter client for
+    Mobile (iOS/Android) and Desktop (Windows/macOS).
   - Build a functional RESTful API backend running on a local development server
     (localhost).
-  - Implement local data persistence and central management across all supported
-    frontend platforms through a single authenticated account.
+  - Implement local data persistence and central management across both clients
+    through a single authenticated account.
 
 
 2. System Architecture & Tech Stack
 
 2.1 Frontend Platforms
-  - Cross-Platform Framework: Flutter (Dart) — one codebase targeting all platforms
+  - Native/Desktop Framework: Flutter (Dart) — Android, iOS, Windows, and macOS
   - Mobile Support: Android & iOS builds. Android is verifiable on the development
     machine; an iOS build requires macOS/Xcode and is included as a supported target.
-  - Web Support: Chrome / Edge / Firefox / Safari via Flutter Web.
+  - Web Support: Chrome / Edge / Firefox / Safari via the HTML/CSS/JavaScript app
+    served from `server/public` by Express.
   - Desktop Support: Windows build (verifiable on the development machine); macOS
     build is a supported target requiring a Mac.
   - Key frontend packages: http/dio (API client), provider (state management),

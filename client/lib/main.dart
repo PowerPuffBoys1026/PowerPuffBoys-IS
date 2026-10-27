@@ -12,11 +12,13 @@ import 'theme.dart';
 
 void main() {
   final api = Api(ApiClient());
-  runApp(ClassMateApp(
-    api: api,
-    auth: AuthState(api, TokenStore()),
-    appState: AppState(api),
-  ));
+  runApp(
+    ClassMateApp(
+      api: api,
+      auth: AuthState(api, TokenStore()),
+      appState: AppState(api),
+    ),
+  );
 }
 
 class ClassMateApp extends StatelessWidget {
@@ -39,11 +41,15 @@ class ClassMateApp extends StatelessWidget {
         ChangeNotifierProvider<AuthState>.value(value: auth),
         ChangeNotifierProvider<AppState>.value(value: appState),
       ],
-      child: MaterialApp(
-        title: 'ClassMate',
-        debugShowCheckedModeBanner: false,
-        theme: buildTheme(),
-        home: const _Root(),
+      child: Consumer<AppState>(
+        builder: (context, state, _) => MaterialApp(
+          title: 'ClassMate',
+          debugShowCheckedModeBanner: false,
+          theme: buildTheme(Brightness.light),
+          darkTheme: buildTheme(Brightness.dark),
+          themeMode: state.themeMode,
+          home: const _Root(),
+        ),
       ),
     );
   }
@@ -60,6 +66,7 @@ class _Root extends StatefulWidget {
 
 class _RootState extends State<_Root> {
   late final AuthState _auth;
+  int? _loadedUserId;
 
   @override
   void initState() {
@@ -79,10 +86,17 @@ class _RootState extends State<_Root> {
     if (!mounted) return;
     final app = context.read<AppState>();
     if (_auth.isAuthenticated) {
-      if (app.dashboard == null && !app.loading && app.error == null) {
+      final userId = _auth.user!.id;
+      if (_loadedUserId != userId) {
+        _loadedUserId = userId;
+        app.switchAccount(userId).then((_) {
+          if (mounted) app.refreshAll();
+        });
+      } else if (app.dashboard == null && !app.loading && app.error == null) {
         app.refreshAll();
       }
     } else {
+      _loadedUserId = null;
       app.reset();
     }
   }

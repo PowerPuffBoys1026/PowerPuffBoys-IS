@@ -4,6 +4,7 @@ const { z } = require('zod');
 const db = require('../db');
 const { validate } = require('../utils/validate');
 const { HttpError } = require('../utils/errors');
+const recycleBin = require('../services/recycle_bin');
 const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
@@ -154,8 +155,8 @@ router.patch('/:id/status', (req, res) => {
 router.delete('/:id', (req, res) => {
   const id = Number(req.params.id);
   ownedWork(id, req.userId);
-  db.prepare('DELETE FROM school_works WHERE id = ?').run(id);
-  res.status(204).end();
+  const recycleBinId = recycleBin.trashRecord(req.userId, 'task', id);
+  res.json({ data: { success: true, recycleBinId } });
 });
 
 module.exports = router;

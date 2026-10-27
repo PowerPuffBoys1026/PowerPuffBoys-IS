@@ -20,20 +20,20 @@ Date: October 12, 2026
 1.1 Project Overview
 ClassMate is a cross-platform academic companion application for students. It solves the problem every student faces daily: losing track of class schedules, accumulating absences without noticing, and missing assignment and exam deadlines. Instead of juggling scattered notes, group chats, and memory, ClassMate gives students one place to view their weekly timetable, mark their attendance with a single tap, monitor their absence percentage per subject against a cutoff, and track school works (assignments, quizzes, and exams) with reminders before they are due.
 
-The application is built as a single codebase that runs on Mobile (Android/iOS), Web browsers, and Desktop (Windows/macOS), all backed by a RESTful API running on a local development server (localhost). The target audience is secondary and tertiary students who need a simple, fast, and reliable way to stay on top of their academic responsibilities.
+ClassMate provides a redesigned browser app served by the Node.js server and a Flutter client for Mobile (Android/iOS) and Desktop (Windows/macOS). Both use the same RESTful API and authenticated account. The target audience is secondary and tertiary students who need a simple, fast, and reliable way to stay on top of their academic responsibilities.
 
 1.2 Core Objectives
-• Develop a unified cross-platform client supporting Mobile (iOS/Android), Web browsers, and Desktop environments (Windows/macOS).
+• Deliver a browser app through the local Node.js server and a Flutter client for Mobile (iOS/Android) and Desktop (Windows/macOS).
 • Build a functional RESTful API backend running on a local development server (localhost).
-• Implement local data persistence and central management across all supported frontend platforms through a single authenticated account.
+• Implement local data persistence and central management across both clients through a single authenticated account.
 
 2. System Architecture & Tech Stack
 
 2.1 Frontend Platforms
-• Cross-Platform Framework: Flutter (Dart) — one codebase targeting all platforms
+• Native/Desktop Framework: Flutter (Dart) — Android, iOS, Windows, and macOS
 • Mobile Support: Android & iOS builds. Android is verifiable on the development machine; an iOS build requires macOS/Xcode and is included as a supported target.
-• Web Support: Chrome / Edge / Firefox / Safari via Flutter Web.
-• Desktop Support: Windows build (verifiable on the development machine); macOS build is a supported target requiring a Mac.
+• Web Support: Chrome / Edge / Firefox / Safari via the Node.js/Express-served browser app.
+• Desktop Support: Flutter Windows build (verifiable on the development machine); macOS build is a supported target requiring a Mac.
 • Key frontend packages: http/dio (API client), provider (state management), flutter_secure_storage (JWT storage), flutter_local_notifications (reminders), table_calendar (weekly/daily schedule views).
 
 2.2 Backend & Data Storage
@@ -57,13 +57,15 @@ Attendance                   One-tap marking of Present / Absent / Late / Cancel
                              per-subject attendance percentage and absence count with a configurable cutoff.
 School Works                 Create, edit, and delete assignments, quizzes, and exams with subject, due date,    Mobile, Web, Desktop
                              priority, status, and notes; "due soon" list.
+Attachments                 Private file uploads for school works and notes: images, PDFs, Word docs,            Mobile, Web, Desktop
+                             PowerPoint files, and text-based files stored securely per user.
 Reminders                    Local notifications before an upcoming class and before a school work deadline.      Mobile (in-app alerts on Web/Desktop)
 Dashboard                    At-a-glance view of today's classes, upcoming deadlines, and attendance warnings.    Mobile, Web, Desktop
 
 3.2 Out of Scope
 The following are explicitly excluded from this iteration and listed as future work:
 • Real-time chat or messaging between users.
-• Image / photo uploads (e.g., assignment attachments).
+• Shared public file storage or social file-sharing.
 • Shared or multi-user class groups (attendance is per-student account only).
 • Cloud push notifications and third-party integrations (Google Calendar, LMS).
 • Payment, marketplace, or social features.

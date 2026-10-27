@@ -4,6 +4,7 @@ const { z } = require('zod');
 const db = require('../db');
 const { validate } = require('../utils/validate');
 const { HttpError } = require('../utils/errors');
+const recycleBin = require('../services/recycle_bin');
 const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
@@ -17,7 +18,9 @@ const slotSchema = z.object({
   startTime: z.string().regex(timeRegex, 'startTime must be HH:MM (24h)'),
   endTime: z.string().regex(timeRegex, 'endTime must be HH:MM (24h)'),
   room: z.string().nullish(),
+  building: z.string().nullish(),
   modality: z.string().nullish(),
+  weekPattern: z.enum(['every', 'a', 'b']).optional(),
 });
 
 const slotUpdateSchema = slotSchema.partial();
@@ -33,7 +36,9 @@ function toSlot(row) {
     startTime: row.start_time,
     endTime: row.end_time,
     room: row.room,
+    building: row.building,
     modality: row.modality,
+    weekPattern: row.week_pattern ?? 'every',
   };
 }
 
@@ -80,9 +85,18 @@ router.post('/', (req, res) => {
 
   const info = db
     .prepare(
-      'INSERT INTO schedule_slots (subject_id, day_of_week, start_time, end_time, room, modality) VALUES (?, ?, ?, ?, ?, ?)',
+      'INSERT INTO schedule_slots (subject_id, day_of_week, start_time, end_time, room, building, modality, week_pattern) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
     )
-    .run(data.subjectId, data.dayOfWeek, data.startTime, data.endTime, data.room ?? null, data.modality ?? null);
+    .run(
+      data.subjectId,
+      data.dayOfWeek,
+      data.startTime,
+      data.endTime,
+      data.room ?? null,
+      data.building ?? null,
+      data.modality ?? null,
+      data.weekPattern ?? 'every',
+    );
 
   res.status(201).json({ data: toSlot(ownedSlot(info.lastInsertRowid, req.userId)) });
 });
@@ -96,14 +110,16 @@ router.put('/:id', (req, res) => {
   if (data.subjectId !== undefined) ownedSubject(data.subjectId, req.userId);
 
   db.prepare(
-    'UPDATE schedule_slots SET subject_id = ?, day_of_week = ?, start_time = ?, end_time = ?, room = ?, modality = ? WHERE id = ?',
+    'UPDATE schedule_slots SET subject_id = ?, day_of_week = ?, start_time = ?, end_time = ?, room = ?, building = ?, modality = ?, week_pattern = ? WHERE id = ?',
   ).run(
     data.subjectId ?? current.subject_id,
     data.dayOfWeek ?? current.day_of_week,
     data.startTime ?? current.start_time,
     data.endTime ?? current.end_time,
     data.room !== undefined ? data.room : current.room,
+    data.building !== undefined ? data.building : current.building,
     data.modality !== undefined ? data.modality : current.modality,
+    data.weekPattern ?? current.week_pattern,
     id,
   );
 
@@ -114,8 +130,8 @@ router.put('/:id', (req, res) => {
 router.delete('/:id', (req, res) => {
   const id = Number(req.params.id);
   ownedSlot(id, req.userId);
-  db.prepare('DELETE FROM schedule_slots WHERE id = ?').run(id);
-  res.status(204).end();
+  const recycleBinId = recycleBin.trashRecord(req.userId, 'schedule', id);
+  res.json({ data: { success: true, recycleBinId } });
 });
 
 module.exports = router;

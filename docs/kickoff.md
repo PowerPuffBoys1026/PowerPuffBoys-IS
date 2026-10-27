@@ -26,11 +26,11 @@ mobile app, a web app, and a desktop app, all talking to one REST API.
 | Platform | Role |
 |---|---|
 | **Mobile** | Everyday device — reminders fire here, fast one-tap attendance |
-| **Web** | No-install access from a shared or lab computer |
+| **Web** | Redesigned Node-served app at `http://localhost:3000/` |
 | **Desktop** | Big-screen view — full weekly timetable grid and reports |
 
 ### Core objectives (from the proposal)
-- A unified cross-platform client — Mobile (iOS/Android), Web, Desktop (Windows/macOS).
+- A Node-served browser app and a Flutter client for Mobile (iOS/Android) and Desktop (Windows/macOS).
 - A functional **RESTful API** running on `localhost`.
 - **Local data persistence** with central management across all platforms.
 
@@ -40,7 +40,7 @@ mobile app, a web app, and a desktop app, all talking to one REST API.
 
 | Layer | Choice |
 |---|---|
-| Client | **Flutter** (Dart) — Android, iOS, Web, Windows, macOS from one codebase |
+| Clients | Browser app in `server/public`; **Flutter** (Dart) for Android, iOS, Windows, and macOS |
 | State / API | `provider`, `http`/`dio`, `flutter_secure_storage`, `flutter_local_notifications`, `table_calendar` |
 | Backend | **Node.js 22+** + **Express** (JavaScript) |
 | Database | **SQLite** (server-side, via `better-sqlite3`) |
@@ -56,8 +56,8 @@ mobile app, a web app, and a desktop app, all talking to one REST API.
 
 ```
 PowerPuffBoys/
-├── client/            Flutter app (all platforms)   ← scaffolded + compiles for web
-├── server/            Node + Express REST API        ← DONE (see §4)
+├── client/            Flutter app (mobile/desktop)  ← Web target removed
+├── server/            Node + Express API + web app  ← DONE (see §4)
 ├── docs/
 │   ├── plan.md        full technical plan: ERD + API reference
 │   ├── kickoff.md     this file
@@ -80,9 +80,9 @@ The **backend is scaffolded and verified working.** Current state:
 - ✅ JWT authentication with hashed passwords; every row is scoped to its owner.
 - ✅ Input validation (zod) and a consistent JSON error shape.
 - ✅ Demo seed data and an end-to-end smoke test — **25/25 checks passing**.
-- ✅ **Flutter client scaffolded** (`client/`) for Android, iOS, Web, Windows, macOS:
+- ✅ **Flutter client scaffolded** (`client/`) for Android, iOS, Windows, and macOS:
   auth, dashboard, schedule, attendance, works, and subjects screens, wired to the API.
-  `flutter analyze` is clean, unit tests pass, and the web build succeeds.
+  The browser app is served separately by Node.js; the legacy Flutter Web target is removed.
 - ⏳ **Android tooling** (Android Studio + SDK) is not installed yet — that's next, so we
   can build the mobile target.
 
@@ -140,7 +140,8 @@ npm run seed
 npm run dev                   # http://localhost:3000
 ```
 
-Open `http://localhost:3000/api/health` — you should see `{"status":"ok",...}`.
+Open `http://localhost:3000/` for the redesigned website. The API health check is at
+`http://localhost:3000/api/health` and should return `{"status":"ok",...}`.
 
 **Demo login** (from `npm run seed`):
 
@@ -151,15 +152,16 @@ password: demo12345
 
 **Prove it works:** in another terminal, `cd server && npm run smoke` → all checks pass.
 
-### Then the Flutter client
+### Then the Flutter client (native and desktop)
 
 ```bash
 cd ../client
 flutter pub get
-flutter run -d edge        # opens the app in Edge, pointing at the local API
+flutter run -d <device-id> # Android, iOS, Windows, or macOS
 ```
 
-Full client notes (platform targets, Windows caveats): [`../client/README.md`](../client/README.md).
+The browser UI is the Node-served app at `http://localhost:3000/`; the old Flutter Web
+target is not used. Full client notes: [`../client/README.md`](../client/README.md).
 
 ---
 

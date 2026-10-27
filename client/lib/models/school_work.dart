@@ -25,17 +25,33 @@ class SchoolWork {
   final String status;
   final String? notes;
 
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'subjectId': subjectId,
+    'subjectCode': subjectCode,
+    'subjectTitle': subjectTitle,
+    'color': color,
+    'type': type,
+    'dueAt': dueAt?.toIso8601String(),
+    'priority': priority,
+    'status': status,
+    'notes': notes,
+  };
+
   factory SchoolWork.fromJson(Map<String, dynamic> json) => SchoolWork(
-        id: json['id'] as int,
-        title: json['title'] as String,
-        subjectId: (json['subjectId'] as num?)?.toInt(),
-        subjectCode: json['subjectCode'] as String?,
-        subjectTitle: json['subjectTitle'] as String?,
-        color: json['color'] as String?,
-        type: json['type'] as String? ?? 'assignment',
-        dueAt: json['dueAt'] != null ? DateTime.tryParse(json['dueAt'] as String)?.toLocal() : null,
-        priority: json['priority'] as String? ?? 'medium',
-        status: json['status'] as String? ?? 'todo',
-        notes: json['notes'] as String?,
-      );
+    id: json['id'] as int,
+    title: json['title'] as String,
+    subjectId: (json['subjectId'] as num?)?.toInt(),
+    subjectCode: json['subjectCode'] as String?,
+    subjectTitle: json['subjectTitle'] as String?,
+    color: json['color'] as String?,
+    type: json['type'] as String? ?? 'assignment',
+    dueAt: json['dueAt'] != null
+        ? DateTime.tryParse(json['dueAt'] as String)?.toLocal()
+        : null,
+    priority: json['priority'] as String? ?? 'medium',
+    status: json['status'] as String? ?? 'todo',
+    notes: json['notes'] as String?,
+  );
 }

@@ -1,7 +1,10 @@
 import '../models/attendance.dart';
 import '../models/dashboard.dart';
+import '../models/grade.dart';
+import '../models/note.dart';
 import '../models/schedule_slot.dart';
 import '../models/school_work.dart';
+import '../models/study.dart';
 import '../models/subject.dart';
 import '../models/user.dart';
 import 'api_client.dart';
@@ -55,6 +58,19 @@ class Api {
     return User.fromJson(res['data'] as Map<String, dynamic>);
   }
 
+  Future<User> updateProfile({
+    required String fullName,
+    String? studentNo,
+    String? course,
+  }) async {
+    final res = await _client.put('/auth/me', body: {
+      'fullName': fullName,
+      'studentNo': studentNo,
+      'course': course,
+    });
+    return User.fromJson(res['data'] as Map<String, dynamic>);
+  }
+
   // ---- Subjects ------------------------------------------------------------
 
   Future<List<Subject>> subjects() async {
@@ -66,13 +82,17 @@ class Api {
     required String code,
     required String title,
     String? instructor,
+    String? instructorEmail,
+    String? officeHours,
     int units = 0,
-    String color = '#4F46E5',
+    String color = '#7B1E2B',
   }) async {
     final res = await _client.post('/subjects', body: {
       'code': code,
       'title': title,
       if (instructor != null && instructor.isNotEmpty) 'instructor': instructor,
+      if (instructorEmail != null && instructorEmail.isNotEmpty) 'instructorEmail': instructorEmail,
+      if (officeHours != null && officeHours.isNotEmpty) 'officeHours': officeHours,
       'units': units,
       'color': color,
     });
@@ -84,13 +104,17 @@ class Api {
     required String code,
     required String title,
     String? instructor,
+    String? instructorEmail,
+    String? officeHours,
     int units = 0,
-    String color = '#4F46E5',
+    String color = '#7B1E2B',
   }) async {
     final res = await _client.put('/subjects/$id', body: {
       'code': code,
       'title': title,
       'instructor': instructor,
+      'instructorEmail': instructorEmail,
+      'officeHours': officeHours,
       'units': units,
       'color': color,
     });
@@ -112,7 +136,9 @@ class Api {
     required String startTime,
     required String endTime,
     String? room,
+    String? building,
     String? modality,
+    String weekPattern = 'every',
   }) async {
     final res = await _client.post('/schedule', body: {
       'subjectId': subjectId,
@@ -120,12 +146,38 @@ class Api {
       'startTime': startTime,
       'endTime': endTime,
       if (room != null && room.isNotEmpty) 'room': room,
+      if (building != null && building.isNotEmpty) 'building': building,
       if (modality != null && modality.isNotEmpty) 'modality': modality,
+      'weekPattern': weekPattern,
     });
     return ScheduleSlot.fromJson(res['data'] as Map<String, dynamic>);
   }
 
   Future<void> deleteSlot(int id) => _client.delete('/schedule/$id');
+
+  Future<ScheduleSlot> updateSlot(
+    int id, {
+    required int subjectId,
+    required int dayOfWeek,
+    required String startTime,
+    required String endTime,
+    String? room,
+    String? building,
+    String? modality,
+    String weekPattern = 'every',
+  }) async {
+    final res = await _client.put('/schedule/$id', body: {
+      'subjectId': subjectId,
+      'dayOfWeek': dayOfWeek,
+      'startTime': startTime,
+      'endTime': endTime,
+      'room': room,
+      'building': building,
+      'modality': modality,
+      'weekPattern': weekPattern,
+    });
+    return ScheduleSlot.fromJson(res['data'] as Map<String, dynamic>);
+  }
 
   // ---- Attendance ----------------------------------------------------------
 
@@ -193,6 +245,28 @@ class Api {
     return SchoolWork.fromJson(res['data'] as Map<String, dynamic>);
   }
 
+  Future<SchoolWork> updateWork(
+    int id, {
+    required String title,
+    int? subjectId,
+    required String type,
+    DateTime? dueAt,
+    required String priority,
+    required String status,
+    String? notes,
+  }) async {
+    final res = await _client.put('/works/$id', body: {
+      'title': title,
+      'subjectId': subjectId,
+      'type': type,
+      'dueAt': dueAt?.toUtc().toIso8601String(),
+      'priority': priority,
+      'status': status,
+      'notes': notes,
+    });
+    return SchoolWork.fromJson(res['data'] as Map<String, dynamic>);
+  }
+
   Future<void> deleteWork(int id) => _client.delete('/works/$id');
 
   // ---- Dashboard -----------------------------------------------------------
@@ -200,5 +274,135 @@ class Api {
   Future<DashboardData> dashboardToday() async {
     final res = await _client.get('/dashboard/today');
     return DashboardData.fromJson(res as Map<String, dynamic>);
+  }
+
+  // ---- Study Focus Sessions ------------------------------------------------
+
+  Future<List<StudySession>> studySessions() async {
+    final res = await _client.get('/study/sessions');
+    return (res['data'] as List)
+        .map((e) => StudySession.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<StudySession> createStudySession({
+    int? subjectId,
+    required int durationMinutes,
+    String mode = 'focus',
+    String? notes,
+  }) async {
+    final res = await _client.post('/study/sessions', body: {
+      'subjectId': ?subjectId,
+      'durationMinutes': durationMinutes,
+      'mode': mode,
+      if (notes != null && notes.isNotEmpty) 'notes': notes,
+    });
+    return StudySession.fromJson(res['data'] as Map<String, dynamic>);
+  }
+
+  Future<StudyStats> studyStats() async {
+    final res = await _client.get('/study/stats');
+    return StudyStats.fromJson(res['data'] as Map<String, dynamic>);
+  }
+
+  Future<void> deleteStudySession(int id) =>
+      _client.delete('/study/sessions/$id');
+
+  // ---- Subject Notes -------------------------------------------------------
+
+  Future<List<SubjectNote>> notes({int? subjectId}) async {
+    final res = await _client.get(
+      '/notes',
+      query: {'subjectId': ?subjectId},
+    );
+    return (res['data'] as List)
+        .map((e) => SubjectNote.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<SubjectNote> createNote({
+    int? subjectId,
+    required String title,
+    required String content,
+    String? tags,
+    bool isPinned = false,
+  }) async {
+    final res = await _client.post('/notes', body: {
+      'subjectId': ?subjectId,
+      'title': title,
+      'content': content,
+      if (tags != null && tags.isNotEmpty) 'tags': tags,
+      'isPinned': isPinned,
+    });
+    return SubjectNote.fromJson(res['data'] as Map<String, dynamic>);
+  }
+
+  Future<SubjectNote> updateNote(
+    int id, {
+    int? subjectId,
+    String? title,
+    String? content,
+    String? tags,
+    bool? isPinned,
+  }) async {
+    final res = await _client.put('/notes/$id', body: {
+      'subjectId': ?subjectId,
+      'title': ?title,
+      'content': ?content,
+      'tags': ?tags,
+      'isPinned': ?isPinned,
+    });
+    return SubjectNote.fromJson(res['data'] as Map<String, dynamic>);
+  }
+
+  Future<void> deleteNote(int id) => _client.delete('/notes/$id');
+
+  // ---- Grade Calculator & Target Goals -------------------------------------
+
+  Future<List<SubjectGrade>> grades() async {
+    final res = await _client.get('/grades');
+    return (res['data'] as List)
+        .map((e) => SubjectGrade.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<SubjectGrade> createGrade({
+    required int subjectId,
+    required String componentName,
+    required double weightPct,
+    double? scorePct,
+    double targetPct = 85,
+  }) async {
+    final res = await _client.post('/grades', body: {
+      'subjectId': subjectId,
+      'componentName': componentName,
+      'weightPct': weightPct,
+      'scorePct': ?scorePct,
+      'targetPct': targetPct,
+    });
+    return SubjectGrade.fromJson(res['data'] as Map<String, dynamic>);
+  }
+
+  Future<SubjectGrade> updateGrade(
+    int id, {
+    String? componentName,
+    double? weightPct,
+    double? scorePct,
+    double? targetPct,
+  }) async {
+    final res = await _client.put('/grades/$id', body: {
+      'componentName': ?componentName,
+      'weightPct': ?weightPct,
+      'scorePct': ?scorePct,
+      'targetPct': ?targetPct,
+    });
+    return SubjectGrade.fromJson(res['data'] as Map<String, dynamic>);
+  }
+
+  Future<void> deleteGrade(int id) => _client.delete('/grades/$id');
+
+  Future<GradeSummary> gradesSummary() async {
+    final res = await _client.get('/grades/summary');
+    return GradeSummary.fromJson(res['data'] as Map<String, dynamic>);
   }
 }

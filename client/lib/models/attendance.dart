@@ -15,7 +15,8 @@ class AttendanceRecord {
   final String status;
   final String? note;
 
-  factory AttendanceRecord.fromJson(Map<String, dynamic> json) => AttendanceRecord(
+  factory AttendanceRecord.fromJson(Map<String, dynamic> json) =>
+      AttendanceRecord(
         id: json['id'] as int,
         subjectId: json['subjectId'] as int,
         slotId: (json['slotId'] as num?)?.toInt(),
@@ -38,6 +39,8 @@ class AttendanceSummary {
     required this.counted,
     this.attendanceRate,
     this.absenceRate,
+    this.safeMissesLeft = 5,
+    this.healthStatus = 'safe',
     this.warning = false,
   });
 
@@ -52,9 +55,29 @@ class AttendanceSummary {
   final int counted;
   final double? attendanceRate;
   final double? absenceRate;
+  final int safeMissesLeft;
+  final String healthStatus;
   final bool warning;
 
-  factory AttendanceSummary.fromJson(Map<String, dynamic> json) => AttendanceSummary(
+  Map<String, dynamic> toJson() => {
+    'subjectId': subjectId,
+    'code': code,
+    'title': title,
+    'color': color,
+    'present': present,
+    'absent': absent,
+    'late': late,
+    'cancelled': cancelled,
+    'counted': counted,
+    'attendanceRate': attendanceRate,
+    'absenceRate': absenceRate,
+    'safeMissesLeft': safeMissesLeft,
+    'healthStatus': healthStatus,
+    'warning': warning,
+  };
+
+  factory AttendanceSummary.fromJson(Map<String, dynamic> json) =>
+      AttendanceSummary(
         subjectId: json['subjectId'] as int,
         code: json['code'] as String,
         title: json['title'] as String,
@@ -66,6 +89,8 @@ class AttendanceSummary {
         counted: (json['counted'] as num?)?.toInt() ?? 0,
         attendanceRate: (json['attendanceRate'] as num?)?.toDouble(),
         absenceRate: (json['absenceRate'] as num?)?.toDouble(),
+        safeMissesLeft: (json['safeMissesLeft'] as num?)?.toInt() ?? 5,
+        healthStatus: json['healthStatus'] as String? ?? 'safe',
         warning: json['warning'] as bool? ?? false,
       );
 }
