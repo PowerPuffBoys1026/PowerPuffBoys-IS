@@ -1,0 +1,25 @@
+# Normalize line endings on commit, check out native on the working copy.
+# Without this, Windows members and Mac/Linux members produce diffs that show
+# every line as changed.
+* text=auto
+
+*.md      text diff=markdown
+*.txt     text
+*.json    text
+*.js      text
+*.ts      text
+*.tsx     text
+*.jsx     text
+*.yml     text
+*.yaml    text
+
+*.png     binary
+*.jpg     binary
+*.jpeg    binary
+*.gif     binary
+*.ico     binary
+*.pdf     binary
+*.apk     binary
+*.aab     binary
+*.keystore binary
+*.jks     binary

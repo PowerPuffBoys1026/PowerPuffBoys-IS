@@ -1,0 +1,115 @@
+PROJECT PROPOSAL
+
+Project Title: ClassMate — Cross-Platform Attendance, Schedule & School Works Tracker
+
+Submitted By: Group 7 (PowerPuffBoys)
+
+Member/Role:
+• Nicholas Bayron — Project Manager & Developer
+• Jetlee L. Uttoh — Developer & Database
+• Raymart Q. Calasang — Quality Assurance
+• Eulos E. Diaz — UI/UX Design
+• Clark B. Cadiente — Developer
+
+Submitted To: [Instructor Name]
+
+Date: October 12, 2026
+
+1. Executive Summary
+
+1.1 Project Overview
+ClassMate is a cross-platform academic companion application for students. It solves the problem every student faces daily: losing track of class schedules, accumulating absences without noticing, and missing assignment and exam deadlines. Instead of juggling scattered notes, group chats, and memory, ClassMate gives students one place to view their weekly timetable, mark their attendance with a single tap, monitor their absence percentage per subject against a cutoff, and track school works (assignments, quizzes, and exams) with reminders before they are due.
+
+The application is built as a single codebase that runs on Mobile (Android/iOS), Web browsers, and Desktop (Windows/macOS), all backed by a RESTful API running on a local development server (localhost). The target audience is secondary and tertiary students who need a simple, fast, and reliable way to stay on top of their academic responsibilities.
+
+1.2 Core Objectives
+• Develop a unified cross-platform client supporting Mobile (iOS/Android), Web browsers, and Desktop environments (Windows/macOS).
+• Build a functional RESTful API backend running on a local development server (localhost).
+• Implement local data persistence and central management across all supported frontend platforms through a single authenticated account.
+
+2. System Architecture & Tech Stack
+
+2.1 Frontend Platforms
+• Cross-Platform Framework: Flutter (Dart) — one codebase targeting all platforms
+• Mobile Support: Android & iOS builds. Android is verifiable on the development machine; an iOS build requires macOS/Xcode and is included as a supported target.
+• Web Support: Chrome / Edge / Firefox / Safari via Flutter Web.
+• Desktop Support: Windows build (verifiable on the development machine); macOS build is a supported target requiring a Mac.
+• Key frontend packages: http/dio (API client), provider (state management), flutter_secure_storage (JWT storage), flutter_local_notifications (reminders), table_calendar (weekly/daily schedule views).
+
+2.2 Backend & Data Storage
+• Development Environment: Node.js 22 LTS or newer on Windows (localhost server)
+• Framework / Language: Node.js + Express (JavaScript)
+• Database Management System: SQLite (file-based, server-side) accessed through better-sqlite3
+• Authentication Method: JWT (JSON Web Tokens) with bcrypt password hashing
+• Supporting libraries: jsonwebtoken, bcrypt, zod (input validation), cors, dotenv
+
+3. Scope of Work & Features
+
+3.1 Feature Matrix
+
+Module                        Feature Description                                                                 Platform Support
+----------------------------  ------------------------------------------------------------------------------------  -----------------------
+Authentication               Register and log in with hashed passwords; JWT session; view and edit profile.       Mobile, Web, Desktop
+Subjects                     Create, edit, and delete subjects with code, title, instructor, units, and color.   Mobile, Web, Desktop
+Schedule                     Build a weekly recurring timetable (day, start/end time, room, modality); day view  Mobile, Web, Desktop
+                             and full weekly grid. (grid best on Web/Desktop)
+Attendance                   One-tap marking of Present / Absent / Late / Cancelled per class session;           Mobile-first; all platforms
+                             per-subject attendance percentage and absence count with a configurable cutoff.
+School Works                 Create, edit, and delete assignments, quizzes, and exams with subject, due date,    Mobile, Web, Desktop
+                             priority, status, and notes; "due soon" list.
+Reminders                    Local notifications before an upcoming class and before a school work deadline.      Mobile (in-app alerts on Web/Desktop)
+Dashboard                    At-a-glance view of today's classes, upcoming deadlines, and attendance warnings.    Mobile, Web, Desktop
+
+3.2 Out of Scope
+The following are explicitly excluded from this iteration and listed as future work:
+• Real-time chat or messaging between users.
+• Image / photo uploads (e.g., assignment attachments).
+• Shared or multi-user class groups (attendance is per-student account only).
+• Cloud push notifications and third-party integrations (Google Calendar, LMS).
+• Payment, marketplace, or social features.
+• Offline-first synchronization and conflict resolution.
+
+4. Project Schedule & Milestones
+
+Four-week build cycle. Start: October 12, 2026. Target completion: November 9, 2026.
+
+Phase           Key Deliverables                                                                               Expected Completion
+---------------  ----------------------------------------------------------------------------------------------  ---------------------
+P0 — Proposal & Design
+                Approved proposal; docs/plan.md with ERD and API reference; agreed repo layout.               Oct 14, 2026
+P1 — Backend Foundation
+                Express + SQLite scaffold; database schema and seed data; authentication (register/login)       Oct 18, 2026
+                with bcrypt and JWT middleware.
+P2 — Core APIs
+                Subjects, Schedule, Attendance, School Works, and Dashboard REST endpoints with validation      Oct 25, 2026
+                and error handling.
+P3 — Flutter Shell & Auth
+                Flutter project scaffold; API client; login/register screens; subjects management UI.           Oct 25, 2026
+P4 — Feature UI
+                Schedule day view and weekly grid; attendance marking and summary; school works list and        Nov 1, 2026
+                editor; dashboard screen.
+P5 — Reminders & Platform Verification
+                Local class/deadline reminders; verified running on Android, Web, and Windows.                  Nov 5, 2026
+P6 — Polish & Demo
+                Bug fixes, README and API documentation, demo script, and presentation materials.              Nov 8, 2026
+
+Final submission and demonstration: November 9, 2026.
+
+5. Resource Requirements
+
+Hardware:
+• Windows development laptop (build/test machine).
+• Android phone or Android emulator for mobile testing.
+• A second screen or browser window for Web/Desktop verification (optional).
+
+Software Tools:
+• Flutter SDK and Dart; Android Studio (emulator/SDK).
+• Node.js 22 LTS or newer and npm.
+• Visual Studio Code (primary editor).
+• Git and GitHub Desktop / CLI.
+• Postman or Thunder Client for API testing.
+• DB Browser for SQLite for inspecting the database.
+• Figma or draw.io for wireframes and the ER diagram.
+
+Version Control:
+• Git with a GitHub-hosted repository. The main branch is protected; all changes go through feature branches and reviewed Pull Requests, following the team workflow defined in CONTRIBUTING.md.
