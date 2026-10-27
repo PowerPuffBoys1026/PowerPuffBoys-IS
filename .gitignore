@@ -1,0 +1,78 @@
+# ---- Secrets & local config (NEVER commit these) ----
+.env
+.env.local
+*.keystore
+*.jks
+local.properties
+google-services.json
+
+# ---- Node / React Native / Expo ----
+node_modules/
+npm-debug.log*
+yarn-error.log*
+.expo/
+dist/
+web-build/
+*.tsbuildinfo
+
+# ---- Android ----
+build/
+.gradle/
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+*.iml
+
+# ---- iOS ----
+Pods/
+Podfile.lock
+*.xcworkspace
+xcuserdata/
+DerivedData/
+*.ipa
+*.dSYM.zip
+
+# ---- Flutter / Dart ----
+.dart_tool/
+.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+build/
+*.iml
+
+# ---- Java ----
+*.class
+*.jar
+target/
+
+# ---- IDE ----
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# ---- OS ----
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- Local database ----  ClassMate SQLite (server-side, never commit)
+server/data/*.db
+server/data/*.db-journal
+*.sqlite
+
+# ---- Logs & OS cruft ----
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# ---- Office temp/lock files (Word/Excel) ----
+~$*
+
+# ---- OpenCode ----
+opencode.jsonc
+opencode.json
+.opencode/
+
