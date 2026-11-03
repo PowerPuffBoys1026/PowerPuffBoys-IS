@@ -1,6 +1,7 @@
 const { z } = require('zod');
 
 const { validate } = require('../utils/validate');
+const { asyncHandler } = require('../utils/async-handler');
 const { HttpError } = require('../utils/errors');
 const SubjectModel = require('../models/subject.model');
 const { toSubject } = require('../views/subject.view');
@@ -18,21 +19,21 @@ const subjectSchema = z.object({
 
 const subjectUpdateSchema = subjectSchema.partial();
 
-function ownedSubject(id, userId) {
-  const row = SubjectModel.findByIdAndUserId(Number(id), userId);
+async function ownedSubject(id, userId) {
+  const row = await SubjectModel.findByIdAndUserId(Number(id), userId);
   if (!row) throw new HttpError(404, 'Subject not found');
   return row;
 }
 
 const SubjectController = {
-  getAll: (req, res) => {
-    const rows = SubjectModel.findAllByUserId(req.userId);
+  getAll: asyncHandler(async (req, res) => {
+    const rows = await SubjectModel.findAllByUserId(req.userId);
     res.json({ data: rows.map(toSubject) });
-  },
+  }),
 
-  create: (req, res) => {
+  create: asyncHandler(async (req, res) => {
     const data = validate(subjectSchema, req.body);
-    const subject = SubjectModel.create({
+    const subject = await SubjectModel.create({
       userId: req.userId,
       code: data.code,
       title: data.title,
@@ -41,19 +42,19 @@ const SubjectController = {
       color: data.color ?? '#4F46E5',
     });
     res.status(201).json({ data: toSubject(subject) });
-  },
+  }),
 
-  getOne: (req, res) => {
-    const subject = ownedSubject(req.params.id, req.userId);
+  getOne: asyncHandler(async (req, res) => {
+    const subject = await ownedSubject(req.params.id, req.userId);
     res.json({ data: toSubject(subject) });
-  },
+  }),
 
-  update: (req, res) => {
+  update: asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
-    const current = ownedSubject(id, req.userId);
+    const current = await ownedSubject(id, req.userId);
     const data = validate(subjectUpdateSchema, req.body);
 
-    const updated = SubjectModel.update(id, {
+    const updated = await SubjectModel.update(id, {
       code: data.code ?? current.code,
       title: data.title ?? current.title,
       instructor: data.instructor !== undefined ? data.instructor : current.instructor,
@@ -62,14 +63,14 @@ const SubjectController = {
     });
 
     res.json({ data: toSubject(updated) });
-  },
+  }),
 
-  delete: (req, res) => {
+  delete: asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
-    ownedSubject(id, req.userId);
-    SubjectModel.delete(id);
+    await ownedSubject(id, req.userId);
+    await SubjectModel.delete(id);
     res.status(204).end();
-  },
+  }),
 };
 
 module.exports = SubjectController;

@@ -7,6 +7,7 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
+    "db:init": "node scripts/create-db.js",
     "seed": "node src/seed.js",
     "smoke": "node scripts/smoke.js"
   },
@@ -16,11 +17,11 @@
   "license": "UNLICENSED",
   "dependencies": {
     "bcryptjs": "^2.4.3",
-    "better-sqlite3": "^13.0.3",
     "cors": "^2.8.6",
     "dotenv": "^16.6.1",
     "express": "^4.22.3",
     "jsonwebtoken": "^9.0.3",
+    "pg": "^8.23.1",
     "zod": "^3.25.76"
   }
 }

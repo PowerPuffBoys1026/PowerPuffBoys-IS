@@ -1,6 +1,7 @@
 const { z } = require('zod');
 
 const { validate } = require('../utils/validate');
+const { asyncHandler } = require('../utils/async-handler');
 const { HttpError } = require('../utils/errors');
 const WorkModel = require('../models/work.model');
 const { toWork } = require('../views/work.view');
@@ -21,31 +22,31 @@ const workSchema = z.object({
 const workUpdateSchema = workSchema.partial();
 const statusSchema = z.object({ status: z.enum(['todo', 'doing', 'done']) });
 
-function ownedWork(id, userId) {
-  const row = WorkModel.findByIdAndUserId(Number(id), userId);
+async function ownedWork(id, userId) {
+  const row = await WorkModel.findByIdAndUserId(Number(id), userId);
   if (!row) throw new HttpError(404, 'School work not found');
   return row;
 }
 
-function ownedSubjectIfAny(subjectId, userId) {
+async function ownedSubjectIfAny(subjectId, userId) {
   if (subjectId === undefined || subjectId === null) return;
-  if (!WorkModel.subjectExistsAndOwned(subjectId, userId)) {
+  if (!(await WorkModel.subjectExistsAndOwned(subjectId, userId))) {
     throw new HttpError(404, 'Subject not found');
   }
 }
 
 const WorkController = {
-  getAll: (req, res) => {
+  getAll: asyncHandler(async (req, res) => {
     const { status, subjectId, dueBefore } = req.query;
-    const rows = WorkModel.findAllByUserId(req.userId, { status, subjectId, dueBefore });
+    const rows = await WorkModel.findAllByUserId(req.userId, { status, subjectId, dueBefore });
     res.json({ data: rows.map(toWork) });
-  },
+  }),
 
-  create: (req, res) => {
+  create: asyncHandler(async (req, res) => {
     const data = validate(workSchema, req.body);
-    ownedSubjectIfAny(data.subjectId ?? null, req.userId);
+    await ownedSubjectIfAny(data.subjectId ?? null, req.userId);
 
-    const workId = WorkModel.create({
+    const workId = await WorkModel.create({
       userId: req.userId,
       subjectId: data.subjectId ?? null,
       title: data.title,
@@ -56,38 +57,38 @@ const WorkController = {
       notes: data.notes ?? null,
     });
 
-    res.status(201).json({ data: toWork(ownedWork(workId, req.userId)) });
-  },
+    res.status(201).json({ data: toWork(await ownedWork(workId, req.userId)) });
+  }),
 
-  getOne: (req, res) => {
-    res.json({ data: toWork(ownedWork(req.params.id, req.userId)) });
-  },
+  getOne: asyncHandler(async (req, res) => {
+    res.json({ data: toWork(await ownedWork(req.params.id, req.userId)) });
+  }),
 
-  update: (req, res) => {
+  update: asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
-    const current = ownedWork(id, req.userId);
+    const current = await ownedWork(id, req.userId);
     const data = validate(workUpdateSchema, req.body);
 
-    if (data.subjectId !== undefined) ownedSubjectIfAny(data.subjectId, req.userId);
+    if (data.subjectId !== undefined) await ownedSubjectIfAny(data.subjectId, req.userId);
 
-    WorkModel.update(id, data, current);
-    res.json({ data: toWork(ownedWork(id, req.userId)) });
-  },
+    await WorkModel.update(id, data, current);
+    res.json({ data: toWork(await ownedWork(id, req.userId)) });
+  }),
 
-  updateStatus: (req, res) => {
+  updateStatus: asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
-    ownedWork(id, req.userId);
+    await ownedWork(id, req.userId);
     const { status } = validate(statusSchema, req.body);
-    WorkModel.updateStatus(id, status);
-    res.json({ data: toWork(ownedWork(id, req.userId)) });
-  },
+    await WorkModel.updateStatus(id, status);
+    res.json({ data: toWork(await ownedWork(id, req.userId)) });
+  }),
 
-  delete: (req, res) => {
+  delete: asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
-    ownedWork(id, req.userId);
-    WorkModel.delete(id);
+    await ownedWork(id, req.userId);
+    await WorkModel.delete(id);
     res.status(204).end();
-  },
+  }),
 };
 
 module.exports = WorkController;

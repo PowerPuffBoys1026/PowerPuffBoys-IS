@@ -1,92 +1,57 @@
 const fs = require('node:fs');
 const path = require('node:path');
-const Database = require('better-sqlite3');
+const { Pool } = require('pg');
 const config = require('./config');
 
-// Ensure the data directory exists before opening the file.
-fs.mkdirSync(path.dirname(config.dbFile), { recursive: true });
+const SCHEMA_NAME = config.dbSchema;
+if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(SCHEMA_NAME)) {
+  throw new Error(`Invalid PG_SCHEMA value: ${SCHEMA_NAME}`);
+}
 
-const db = new Database(config.dbFile);
-db.pragma('journal_mode = WAL');
-db.pragma('foreign_keys = ON');
+const SCHEMA = fs.readFileSync(path.join(__dirname, '..', 'db', 'schema.sql'), 'utf8');
 
-const SCHEMA = `
-CREATE TABLE IF NOT EXISTS users (
-  id            INTEGER PRIMARY KEY AUTOINCREMENT,
-  email         TEXT NOT NULL UNIQUE,
-  password_hash TEXT NOT NULL,
-  full_name     TEXT NOT NULL,
-  student_no    TEXT,
-  course        TEXT,
-  created_at    TEXT NOT NULL DEFAULT (datetime('now'))
-);
+const poolConfig = { connectionString: config.databaseUrl };
 
-CREATE TABLE IF NOT EXISTS subjects (
-  id         INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  code       TEXT NOT NULL,
-  title      TEXT NOT NULL,
-  instructor TEXT,
-  units      INTEGER NOT NULL DEFAULT 0,
-  color      TEXT NOT NULL DEFAULT '#4F46E5',
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
+if (config.databaseSsl) {
+  poolConfig.ssl = { rejectUnauthorized: false };
+}
 
-CREATE TABLE IF NOT EXISTS schedule_slots (
-  id          INTEGER PRIMARY KEY AUTOINCREMENT,
-  subject_id  INTEGER NOT NULL REFERENCES subjects(id) ON DELETE CASCADE,
-  day_of_week INTEGER NOT NULL CHECK (day_of_week BETWEEN 0 AND 6),
-  start_time  TEXT NOT NULL,
-  end_time    TEXT NOT NULL,
-  room        TEXT,
-  modality    TEXT
-);
+// Keep every connection on the configured schema. The smoke test uses a
+// throwaway schema so it never touches development data.
+if (SCHEMA_NAME !== 'public') {
+  poolConfig.options = `-c search_path="${SCHEMA_NAME}"`;
+}
 
-CREATE TABLE IF NOT EXISTS attendance_records (
-  id         INTEGER PRIMARY KEY AUTOINCREMENT,
-  subject_id INTEGER NOT NULL REFERENCES subjects(id) ON DELETE CASCADE,
-  slot_id    INTEGER REFERENCES schedule_slots(id) ON DELETE SET NULL,
-  date       TEXT NOT NULL,
-  status     TEXT NOT NULL CHECK (status IN ('present','absent','late','cancelled')),
-  note       TEXT,
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
+const pool = new Pool(poolConfig);
 
-CREATE TABLE IF NOT EXISTS school_works (
-  id         INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  subject_id INTEGER REFERENCES subjects(id) ON DELETE SET NULL,
-  title      TEXT NOT NULL,
-  type       TEXT NOT NULL DEFAULT 'assignment',
-  due_at     TEXT,
-  priority   TEXT NOT NULL DEFAULT 'medium',
-  status     TEXT NOT NULL DEFAULT 'todo',
-  notes      TEXT,
-  created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
+pool.on('error', (err) => {
+  console.error('Unexpected PostgreSQL pool error', err);
+});
 
-CREATE TABLE IF NOT EXISTS notes (
-  id         INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  title      TEXT NOT NULL DEFAULT 'Untitled',
-  content    TEXT NOT NULL DEFAULT '',
-  is_pinned  INTEGER NOT NULL DEFAULT 0,
-  color      TEXT DEFAULT '#1C223D',
-  tags       TEXT,
-  created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
+let initPromise = null;
 
-CREATE INDEX IF NOT EXISTS idx_subjects_user        ON subjects(user_id);
-CREATE INDEX IF NOT EXISTS idx_slots_subject        ON schedule_slots(subject_id);
-CREATE INDEX IF NOT EXISTS idx_attendance_subject   ON attendance_records(subject_id);
-CREATE INDEX IF NOT EXISTS idx_works_user           ON school_works(user_id);
-CREATE INDEX IF NOT EXISTS idx_works_due            ON school_works(due_at);
-CREATE INDEX IF NOT EXISTS idx_notes_user           ON notes(user_id);
-CREATE INDEX IF NOT EXISTS idx_notes_updated        ON notes(updated_at);
-`;
+/** Create the configured schema and its tables once per process (idempotent). */
+function init() {
+  if (!initPromise) {
+    initPromise = (async () => {
+      if (SCHEMA_NAME !== 'public') {
+        await pool.query(`CREATE SCHEMA IF NOT EXISTS "${SCHEMA_NAME}"`);
+      }
+      await pool.query(SCHEMA);
+    })().catch((err) => {
+      initPromise = null;
+      throw err;
+    });
+  }
+  return initPromise;
+}
 
-db.exec(SCHEMA);
+function query(text, params) {
+  return pool.query(text, params);
+}
 
-module.exports = db;
+function close() {
+  return pool.end();
+}
+
+module.exports = { pool, query, init, close };

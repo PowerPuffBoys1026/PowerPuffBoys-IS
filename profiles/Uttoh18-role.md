@@ -25,7 +25,7 @@ Per `docs/kickoff.md` §7 and `docs/plan.md` §8:
 
 ```
 server/src/
-├── db.js         SQLite connection + schema   ← my main area
+├── db.js         PostgreSQL connection + schema   ← my main area
 ├── seed.js       demo data                    ← my main area
 ├── config.js     env-driven config
 ├── middleware/   auth (JWT), error handling
@@ -75,11 +75,11 @@ git commit -m "feat: describe what I did"
 git push -u origin feature/my-task            # then open a PR
 ```
 
-Never commit secrets — `.env` and the SQLite DB are gitignored.
+Never commit secrets — `.env` and local database files are gitignored.
 
 ## My next tasks
 
-- [ ] Get the backend running locally and confirm `npm run smoke` → 25/25.
+- [ ] Get the backend running locally and confirm `npm run smoke` → 29/29.
 - [ ] Review and own `server/src/db.js` + `server/src/seed.js`.
 - [ ] Pair with Clark on Flutter client screens/state/API integration.
 - [ ] Pair on the shared attendance-summary logic (`server/src/services/`).

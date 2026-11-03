@@ -4,6 +4,7 @@ const { z } = require('zod');
 
 const config = require('../config');
 const { validate } = require('../utils/validate');
+const { asyncHandler } = require('../utils/async-handler');
 const { HttpError } = require('../utils/errors');
 const UserModel = require('../models/user.model');
 const { publicUser } = require('../views/user.view');
@@ -26,16 +27,16 @@ function signToken(user) {
 }
 
 const AuthController = {
-  register: (req, res) => {
+  register: asyncHandler(async (req, res) => {
     const data = validate(registerSchema, req.body);
     const email = data.email.toLowerCase();
 
-    if (UserModel.existsByEmail(email)) {
+    if (await UserModel.existsByEmail(email)) {
       throw new HttpError(409, 'Email is already registered');
     }
 
     const hash = bcrypt.hashSync(data.password, 10);
-    const user = UserModel.create({
+    const user = await UserModel.create({
       email,
       passwordHash: hash,
       fullName: data.fullName,
@@ -44,24 +45,24 @@ const AuthController = {
     });
 
     res.status(201).json({ token: signToken(user), user: publicUser(user) });
-  },
+  }),
 
-  login: (req, res) => {
+  login: asyncHandler(async (req, res) => {
     const data = validate(loginSchema, req.body);
-    const user = UserModel.findByEmail(data.email.toLowerCase());
+    const user = await UserModel.findByEmail(data.email.toLowerCase());
 
     if (!user || !bcrypt.compareSync(data.password, user.password_hash)) {
       throw new HttpError(401, 'Invalid email or password');
     }
 
     res.json({ token: signToken(user), user: publicUser(user) });
-  },
+  }),
 
-  me: (req, res) => {
-    const user = UserModel.findById(req.userId);
+  me: asyncHandler(async (req, res) => {
+    const user = await UserModel.findById(req.userId);
     if (!user) throw new HttpError(404, 'User not found');
     res.json({ data: publicUser(user) });
-  },
+  }),
 };
 
 module.exports = AuthController;

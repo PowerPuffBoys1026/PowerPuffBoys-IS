@@ -1,4 +1,4 @@
-# Ignore local SQLite database files (created at runtime by the server).
-# This file is kept so the folder exists after a fresh clone.
+# Placeholder for optional local database artifacts. The PostgreSQL data
+# directory lives outside the repository.
 *
 !.gitignore

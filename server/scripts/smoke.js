@@ -1,23 +1,16 @@
 /**
- * End-to-end smoke test. Uses an isolated port and a throwaway database so it
- * never touches real data.
+ * End-to-end smoke test. Uses an isolated port and a throwaway PostgreSQL
+ * schema so it never touches real data.
  *   npm run smoke
  */
-const path = require('node:path');
-const fs = require('node:fs');
-
 process.env.PORT = process.env.SMOKE_PORT || '3999';
-process.env.DB_FILE = path.join(__dirname, '..', 'data', 'smoke.db');
+process.env.PG_SCHEMA = `smoke_${Date.now()}`;
 process.env.JWT_SECRET = 'smoke-secret';
 
-// Start from a clean database.
-for (const suffix of ['', '-wal', '-shm']) {
-  const file = process.env.DB_FILE + suffix;
-  if (fs.existsSync(file)) fs.unlinkSync(file);
-}
-
 const app = require('../src/app');
+const { init, query, close } = require('../src/db');
 
+const SCHEMA = process.env.PG_SCHEMA;
 const BASE = `http://localhost:${process.env.PORT}/api`;
 let passed = 0;
 
@@ -40,10 +33,16 @@ async function req(method, url, { token, body } = {}) {
   return { status: res.status, json: text ? JSON.parse(text) : null };
 }
 
+async function dropSchema() {
+  await query(`DROP SCHEMA IF EXISTS "${SCHEMA}" CASCADE`);
+}
+
 async function main() {
+  await init();
+
   const server = app.listen(process.env.PORT);
   await new Promise((resolve) => server.once('listening', resolve));
-  console.log(`Smoke test against ${BASE}\n`);
+  console.log(`Smoke test against ${BASE} (schema: ${SCHEMA})\n`);
 
   let r = await req('GET', '/health');
   check('health responds ok', r.status === 200 && r.json.status === 'ok');
@@ -80,6 +79,7 @@ async function main() {
     body: { subjectId, dayOfWeek: 1, startTime: '08:00', endTime: '09:30', room: 'Lab 2' },
   });
   check('create schedule slot -> 201', r.status === 201);
+  check('schedule returns HH:MM times', r.json.data.startTime === '08:00' && r.json.data.endTime === '09:30');
   const slotId = r.json.data.id;
 
   r = await req('POST', '/schedule', { token, body: { subjectId, dayOfWeek: 1, startTime: '25:00', endTime: '09:30' } });
@@ -93,6 +93,7 @@ async function main() {
   const today = new Date().toISOString().slice(0, 10);
   r = await req('POST', '/attendance', { token, body: { subjectId, slotId, date: today, status: 'present' } });
   check('mark attendance -> 201', r.status === 201);
+  check('attendance date stays YYYY-MM-DD', r.json.data.date === today);
 
   r = await req('POST', '/attendance', { token, body: { subjectId, slotId, date: today, status: 'absent' } });
   check('duplicate attendance -> 409', r.status === 409);
@@ -128,19 +129,29 @@ async function main() {
   r = await req('GET', '/works', { token });
   check('work list empty after delete', r.json.data.length === 0);
 
-  // Close the server and the SQLite handle before deleting the throwaway DB.
+  // Notes exercise boolean storage and timestamp defaults.
+  r = await req('POST', '/notes', { token, body: { title: 'Note 1', content: 'hello', isPinned: true } });
+  check('create note -> 201', r.status === 201 && r.json.data.isPinned === true);
+  const noteId = r.json.data.id;
+  r = await req('PATCH', `/notes/${noteId}/pin`, { token });
+  check('toggle note pin', r.status === 200 && r.json.data.isPinned === false);
+
+  // Close the server and drop the throwaway schema.
   await new Promise((resolve) => server.close(resolve));
-  require('../src/db').close();
-  for (const suffix of ['', '-wal', '-shm']) {
-    const file = process.env.DB_FILE + suffix;
-    if (fs.existsSync(file)) fs.unlinkSync(file);
-  }
+  await dropSchema();
+  await close();
 
   console.log(`\nAll ${passed} checks passed.`);
 }
 
-main().catch((err) => {
+main().catch(async (err) => {
   console.error('\nSMOKE TEST FAILED');
   console.error(err);
+  try {
+    await dropSchema();
+  } catch {
+    // Ignore cleanup errors so the original failure is shown.
+  }
+  await close();
   process.exit(1);
 });

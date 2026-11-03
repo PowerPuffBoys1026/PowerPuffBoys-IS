@@ -59,7 +59,7 @@ target/
 Thumbs.db
 desktop.ini
 
-# ---- Local database ----  ClassMate SQLite (server-side, never commit)
+# ---- Local database artifacts ----  (PostgreSQL runs as a service)
 server/data/*.db
 server/data/*.db-journal
 *.sqlite

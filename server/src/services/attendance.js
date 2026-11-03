@@ -1,4 +1,4 @@
-const db = require('../db');
+const { query } = require('../db');
 const config = require('../config');
 
 /**
@@ -7,24 +7,23 @@ const config = require('../config');
  * sessions are ignored. `warning` is true once the absence rate reaches the
  * configured threshold.
  */
-function attendanceSummary(userId) {
-  const rows = db
-    .prepare(
-      `SELECT s.id,
-              s.code,
-              s.title,
-              s.color,
-              SUM(CASE WHEN a.status = 'present'   THEN 1 ELSE 0 END) AS present,
-              SUM(CASE WHEN a.status = 'absent'    THEN 1 ELSE 0 END) AS absent,
-              SUM(CASE WHEN a.status = 'late'      THEN 1 ELSE 0 END) AS late,
-              SUM(CASE WHEN a.status = 'cancelled' THEN 1 ELSE 0 END) AS cancelled
-         FROM subjects s
-         LEFT JOIN attendance_records a ON a.subject_id = s.id
-        WHERE s.user_id = ?
-        GROUP BY s.id
-        ORDER BY s.code`,
-    )
-    .all(userId);
+async function attendanceSummary(userId) {
+  const { rows } = await query(
+    `SELECT s.id,
+            s.code,
+            s.title,
+            s.color,
+            COUNT(a.id) FILTER (WHERE a.status = 'present')::int   AS present,
+            COUNT(a.id) FILTER (WHERE a.status = 'absent')::int    AS absent,
+            COUNT(a.id) FILTER (WHERE a.status = 'late')::int      AS late,
+            COUNT(a.id) FILTER (WHERE a.status = 'cancelled')::int AS cancelled
+       FROM subjects s
+       LEFT JOIN attendance_records a ON a.subject_id = s.id
+      WHERE s.user_id = $1
+      GROUP BY s.id, s.code, s.title, s.color
+      ORDER BY s.code`,
+    [userId],
+  );
 
   return rows.map((row) => {
     const counted = row.present + row.absent + row.late;

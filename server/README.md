@@ -1,20 +1,50 @@
 # ClassMate — Server (REST API)
 
-Node.js + Express + SQLite backend for the ClassMate app. Runs on
+Node.js + Express + PostgreSQL backend for the ClassMate app. Runs on
 `http://localhost:3000`.
 
 ## Requirements
-- Node.js 22 or newer (required by `better-sqlite3` 13)
+- Node.js 22 or newer
+- PostgreSQL 14 or newer (tested on PostgreSQL 18)
 
 ## Setup
 
 ```bash
 cd server
 npm install
-cp .env.example .env      # then edit JWT_SECRET
-npm run seed              # optional: creates a demo account + sample data
-npm run dev               # starts on http://localhost:3000 (auto-reload)
+cp .env.example .env      # then set DATABASE_URL and JWT_SECRET
+
+# 1. create the database (if missing) + apply db/schema.sql
+npm run db:init
+
+# 2. optional: creates a demo account + sample data
+npm run seed
+
+# 3. starts on http://localhost:3000 (auto-reload)
+npm run dev
 ```
+
+`npm run db:init` is safe to re-run: it creates the database named in
+`DATABASE_URL` only when it is missing, then applies `db/schema.sql`
+(`CREATE TABLE IF NOT EXISTS`, so existing tables are left alone).
+
+Prefer doing it manually with `psql`? Run:
+
+```bash
+createdb classmate
+psql -h localhost -U postgres -d classmate -f db/schema.sql
+```
+
+The default connection string is
+`postgres://postgres:postgres@localhost:5432/classmate`. Override it in `.env`:
+
+```ini
+DATABASE_URL=postgres://user:password@localhost:5432/classmate
+# PG_SCHEMA=public          # optional, defaults to public
+# DATABASE_SSL=false        # set true for providers that require SSL
+```
+
+The tables and indexes are created automatically on first start.
 
 Demo credentials created by `npm run seed`:
 
@@ -29,8 +59,13 @@ password: demo12345
 |---|---|
 | `npm start` | Run the API |
 | `npm run dev` | Run with auto-reload (`node --watch`) |
+| `npm run db:init` | Create the database if missing + apply `db/schema.sql` |
 | `npm run seed` | Insert demo user, subjects, schedule and works |
-| `npm run smoke` | End-to-end test on an isolated DB/port |
+| `npm run smoke` | End-to-end test on an isolated port and PostgreSQL schema |
+
+`npm run smoke` creates a temporary PostgreSQL schema (for example `smoke_...`),
+runs the checks against it, then drops it. It never touches the data in your
+configured schema.
 
 ## API
 
@@ -81,7 +116,7 @@ server/
 │   ├── app.js              Express app (no listen) — testable
 │   ├── index.js            starts the server
 │   ├── config.js           env-driven config
-│   ├── db.js               SQLite connection + schema
+│   ├── db.js               PostgreSQL pool + schema bootstrap
 │   ├── seed.js             demo data
 │   ├── routes/             URL → controller wiring only
 │   ├── controllers/        HTTP handlers (req/res)
@@ -89,9 +124,11 @@ server/
 │   ├── views/              JSON serializers (the API's "view")
 │   ├── services/           shared business logic
 │   ├── middleware/         auth (JWT), error handling
-│   └── utils/              validate (zod), HttpError
+│   └── utils/              validate (zod), async handler, HttpError
+├── db/schema.sql           tables, constraints and indexes
+├── scripts/create-db.js    creates the database + applies the schema
 ├── scripts/smoke.js        end-to-end smoke test
-└── data/                   SQLite files (gitignored)
+└── .env.example            connection + auth settings template
 ```
 
 ## Data notes

@@ -2,6 +2,11 @@
  * View: shapes dashboard rows into the dashboard JSON payload.
  */
 
+function toIsoString(value) {
+  if (!value) return value;
+  return value instanceof Date ? value.toISOString() : value;
+}
+
 function toClass(row) {
   return {
     slotId: row.id,
@@ -17,16 +22,17 @@ function toClass(row) {
 }
 
 function toDueSoon(row, today) {
+  const dueAt = toIsoString(row.due_at);
   return {
     id: row.id,
     title: row.title,
     type: row.type,
-    dueAt: row.due_at,
+    dueAt,
     priority: row.priority,
     status: row.status,
     subjectCode: row.subject_code,
     color: row.color,
-    overdue: row.due_at.slice(0, 10) < today,
+    overdue: dueAt ? dueAt.slice(0, 10) < today : false,
   };
 }
 

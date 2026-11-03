@@ -52,8 +52,8 @@ simple, fast, and reliable way to stay on top of their academic responsibilities
 2.2 Backend & Data Storage
   - Development Environment: Node.js 22 LTS or newer on Windows (localhost server)
   - Framework / Language: Node.js + Express (JavaScript)
-  - Database Management System: SQLite (file-based, server-side) accessed through
-    better-sqlite3
+  - Database Management System: PostgreSQL (server-side) accessed through the
+    pg driver
   - Authentication Method: JWT (JSON Web Tokens) with bcrypt password hashing
   - Supporting libraries: jsonwebtoken, bcrypt, zod (input validation), cors, dotenv
 
@@ -119,7 +119,7 @@ Approved proposal; docs/plan.md with ERD and API reference; agreed repo layout.
 Oct 14, 2026
 
 P1 — Backend Foundation
-Express + SQLite scaffold; database schema and seed data; authentication
+Express + PostgreSQL scaffold; database schema and seed data; authentication
 (register/login) with bcrypt and JWT middleware.
 Oct 18, 2026
 
@@ -160,7 +160,7 @@ Software Tools:
   - Visual Studio Code (primary editor).
   - Git and GitHub Desktop / CLI.
   - Postman or Thunder Client for API testing.
-  - DB Browser for SQLite for inspecting the database.
+  - pgAdmin or psql for inspecting the PostgreSQL database.
   - Figma or draw.io for wireframes and the ER diagram.
 
 Version Control:
