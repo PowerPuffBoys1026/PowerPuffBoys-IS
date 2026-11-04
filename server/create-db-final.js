@@ -1,0 +1,30 @@
+const { Client } = require('pg');
+
+async function run() {
+  const client = new Client({
+    user: 'postgres',
+    host: 'localhost',
+    database: 'postgres',
+    password: '10262001',
+    port: 5432,
+  });
+  try {
+    await client.connect();
+    try {
+      await client.query('CREATE DATABASE classmate;');
+      console.log('created');
+    } catch (e) {
+      if (e.message.includes('already exists')) {
+        console.log('exists');
+      } else {
+        console.log('create err', e.message);
+      }
+    }
+  } catch (e) {
+    console.error('err', e.message);
+  } finally {
+    await client.end();
+  }
+}
+
+run();

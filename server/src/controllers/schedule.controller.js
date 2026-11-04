@@ -18,20 +18,20 @@ const slotSchema = z.object({
 
 const slotUpdateSchema = slotSchema.partial();
 
-function ownedSlot(id, userId) {
-  const row = ScheduleModel.findByIdAndUserId(Number(id), userId);
+async function ownedSlot(id, userId) {
+  const row = await ScheduleModel.findByIdAndUserId(Number(id), userId);
   if (!row) throw new HttpError(404, 'Schedule slot not found');
   return row;
 }
 
-function ownedSubject(subjectId, userId) {
-  if (!ScheduleModel.subjectExistsAndOwned(subjectId, userId)) {
+async function ownedSubject(subjectId, userId) {
+  if (!(await ScheduleModel.subjectExistsAndOwned(subjectId, userId))) {
     throw new HttpError(404, 'Subject not found');
   }
 }
 
 const ScheduleController = {
-  getAll: (req, res) => {
+  getAll: async (req, res) => {
     const { day } = req.query;
     if (day !== undefined && day !== '') {
       const dayNum = Number(day);
@@ -39,15 +39,15 @@ const ScheduleController = {
         throw new HttpError(400, 'day must be an integer between 0 and 6');
       }
     }
-    const rows = ScheduleModel.findAllByUserId(req.userId, day);
+    const rows = await ScheduleModel.findAllByUserId(req.userId, day);
     res.json({ data: rows.map(toSlot) });
   },
 
-  create: (req, res) => {
+  create: async (req, res) => {
     const data = validate(slotSchema, req.body);
-    ownedSubject(data.subjectId, req.userId);
+    await ownedSubject(data.subjectId, req.userId);
 
-    const slotId = ScheduleModel.create({
+    const slotId = await ScheduleModel.create({
       subjectId: data.subjectId,
       dayOfWeek: data.dayOfWeek,
       startTime: data.startTime,
@@ -56,24 +56,24 @@ const ScheduleController = {
       modality: data.modality ?? null,
     });
 
-    res.status(201).json({ data: toSlot(ownedSlot(slotId, req.userId)) });
+    res.status(201).json({ data: toSlot(await ownedSlot(slotId, req.userId)) });
   },
 
-  update: (req, res) => {
+  update: async (req, res) => {
     const id = Number(req.params.id);
-    const current = ownedSlot(id, req.userId);
+    const current = await ownedSlot(id, req.userId);
     const data = validate(slotUpdateSchema, req.body);
 
-    if (data.subjectId !== undefined) ownedSubject(data.subjectId, req.userId);
+    if (data.subjectId !== undefined) await ownedSubject(data.subjectId, req.userId);
 
-    ScheduleModel.update(id, data, current);
-    res.json({ data: toSlot(ownedSlot(id, req.userId)) });
+    await ScheduleModel.update(id, data, current);
+    res.json({ data: toSlot(await ownedSlot(id, req.userId)) });
   },
 
-  delete: (req, res) => {
+  delete: async (req, res) => {
     const id = Number(req.params.id);
-    ownedSlot(id, req.userId);
-    ScheduleModel.delete(id);
+    await ownedSlot(id, req.userId);
+    await ScheduleModel.delete(id);
     res.status(204).end();
   },
 };
