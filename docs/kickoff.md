@@ -43,12 +43,12 @@ mobile app, a web app, and a desktop app, all talking to one REST API.
 | Client | **Flutter** (Dart) — Android, iOS, Web, Windows, macOS from one codebase |
 | State / API | `provider`, `http`/`dio`, `flutter_secure_storage`, `flutter_local_notifications`, `table_calendar` |
 | Backend | **Node.js 22+** + **Express** (JavaScript) |
-| Database | **SQLite** (server-side, via `better-sqlite3`) |
+| Database | **PostgreSQL** (server-side, via `pg`) |
 | Auth | **JWT** + `bcryptjs` password hashing |
-| Tooling | VS Code, Android Studio, Postman/Thunder Client, DB Browser for SQLite |
+| Tooling | VS Code, Android Studio, Postman/Thunder Client, `psql` / pgAdmin |
 
-> ⚠️ **Node.js 22 or newer is required.** `better-sqlite3` 13 has no builds for Node 20.
-> Run `node -v` — if it's below 22, install the current LTS before you start.
+> ⚠️ **Node.js 22 or newer and a running PostgreSQL server are required.**
+> Run `node -v` and confirm PostgreSQL is available before starting the API.
 
 ---
 
@@ -76,10 +76,10 @@ The **backend is scaffolded and verified working.** Current state:
 
 - ✅ Express REST API with all planned endpoints (auth, subjects, schedule, attendance,
   school works, dashboard).
-- ✅ SQLite schema for 5 tables, created automatically on first run.
+- ✅ PostgreSQL schema for the app tables, created automatically on first run.
 - ✅ JWT authentication with hashed passwords; every row is scoped to its owner.
 - ✅ Input validation (zod) and a consistent JSON error shape.
-- ✅ Demo seed data and an end-to-end smoke test — **25/25 checks passing**.
+- ✅ Demo seed data and an end-to-end smoke test — **35/35 checks passing**.
 - ✅ **Flutter client scaffolded** (`client/`) for Android, iOS, Web, Windows, macOS:
   auth, dashboard, schedule, attendance, works, and subjects screens, wired to the API.
   `flutter analyze` is clean, unit tests pass, and the web build succeeds.
@@ -131,9 +131,10 @@ npm install
 
 # 3. local config
 copy .env.example .env        # Windows  (macOS/Linux: cp .env.example .env)
-#   …set JWT_SECRET to any long random string…
+#   …set JWT_SECRET to any long random string and PGPASSWORD to your PostgreSQL password…
 
-# 4. demo data (creates a login you can use right away)
+# 4. create the database and its demo data
+npm run db:create
 npm run seed
 
 # 5. run the API
@@ -171,7 +172,7 @@ The full rulebook is [`CONTRIBUTING.md`](../CONTRIBUTING.md). The short version:
 2. **One branch per task**, named `feature/short-description`.
 3. **Never merge your own PR** — a teammate reviews and approves it.
 4. **Commit messages:** `type: description` (`feat`, `fix`, `docs`, `refactor`, `test`, `chore`).
-5. **Never commit secrets.** `.env` and the SQLite database are gitignored — keep it that way.
+5. **Never commit secrets.** `.env` and local database files are gitignored — keep it that way.
 
 The daily loop:
 

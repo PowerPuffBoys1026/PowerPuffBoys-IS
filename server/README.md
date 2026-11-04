@@ -1,20 +1,27 @@
 # ClassMate — Server (REST API)
 
-Node.js + Express + SQLite backend for the ClassMate app. Runs on
+Node.js + Express + PostgreSQL backend for the ClassMate app. Runs on
 `http://localhost:3000`.
 
 ## Requirements
-- Node.js 22 or newer (required by `better-sqlite3` 13)
+- Node.js 22 or newer
+- PostgreSQL running on `localhost:5432` (or configure another connection in `.env`)
 
 ## Setup
 
 ```bash
 cd server
 npm install
-cp .env.example .env      # then edit JWT_SECRET
+copy .env.example .env    # Windows; then set JWT_SECRET and PGPASSWORD
+npm run db:create         # creates the PostgreSQL database once
 npm run seed              # optional: creates a demo account + sample data
 npm run dev               # starts on http://localhost:3000 (auto-reload)
 ```
+
+The API creates its tables on startup. To import the existing local SQLite data,
+create the database and run `npm run db:migrate:sqlite` before starting the API.
+The import is transactional, refuses a non-empty PostgreSQL database, and leaves
+the SQLite file unchanged.
 
 Demo credentials created by `npm run seed`:
 
@@ -30,6 +37,8 @@ password: demo12345
 | `npm start` | Run the API |
 | `npm run dev` | Run with auto-reload (`node --watch`) |
 | `npm run seed` | Insert demo user, subjects, schedule and works |
+| `npm run db:create` | Create the PostgreSQL database configured in `.env` |
+| `npm run db:migrate:sqlite` | Import `data/classmate.db` into an empty PostgreSQL database |
 | `npm run smoke` | End-to-end test on an isolated DB/port |
 
 ## API
@@ -81,7 +90,8 @@ server/
 │   ├── app.js              Express app (no listen) — testable
 │   ├── index.js            starts the server
 │   ├── config.js           env-driven config
-│   ├── db.js               SQLite connection + schema
+│   ├── db.js               PostgreSQL pool + schema
+│   ├── migrate-sqlite.js   one-time import from the old SQLite database
 │   ├── seed.js             demo data
 │   ├── routes/             URL → controller wiring only
 │   ├── controllers/        HTTP handlers (req/res)
@@ -91,7 +101,7 @@ server/
 │   ├── middleware/         auth (JWT), error handling
 │   └── utils/              validate (zod), HttpError
 ├── scripts/smoke.js        end-to-end smoke test
-└── data/                   SQLite files (gitignored)
+└── data/                   legacy SQLite files (gitignored)
 ```
 
 ## Data notes

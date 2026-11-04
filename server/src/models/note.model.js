@@ -7,7 +7,7 @@ const NoteModel = {
 
     if (pinned !== undefined && pinned !== '') {
       sql += ` AND is_pinned = $${params.length + 1}`;
-      params.push(pinned === 'true' || pinned === true ? 1 : 0);
+      params.push(pinned === 'true' || pinned === true);
     }
 
     if (tag) {
@@ -30,7 +30,7 @@ const NoteModel = {
   create: async ({ userId, title, content, isPinned, color, tags }) => {
     const result = await db.query(
       'INSERT INTO notes (user_id, title, content, is_pinned, color, tags) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
-      [userId, title ?? 'Untitled', content ?? '', isPinned ? 1 : 0, color ?? '#1C223D', tags ?? null],
+      [userId, title ?? 'Untitled', content ?? '', Boolean(isPinned), color ?? '#1C223D', tags ?? null],
     );
     return result.rows[0].id;
   },
@@ -48,7 +48,7 @@ const NoteModel = {
       [
         updates.title ?? current.title,
         updates.content ?? current.content,
-        updates.isPinned !== undefined ? (updates.isPinned ? 1 : 0) : current.is_pinned,
+        updates.isPinned !== undefined ? updates.isPinned : current.is_pinned,
         updates.color !== undefined ? updates.color : current.color,
         updates.tags !== undefined ? updates.tags : current.tags,
         id,
@@ -57,7 +57,7 @@ const NoteModel = {
   },
 
   togglePin: async (id) => {
-    await db.query("UPDATE notes SET is_pinned = CASE WHEN is_pinned = 1 THEN 0 ELSE 1 END, updated_at = NOW() WHERE id = $1", [id]);
+    await db.query('UPDATE notes SET is_pinned = NOT is_pinned, updated_at = NOW() WHERE id = $1', [id]);
   },
 
   delete: async (id) => {

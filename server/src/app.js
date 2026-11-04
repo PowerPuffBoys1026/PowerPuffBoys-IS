@@ -1,7 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 
-require('./db'); // initialise schema on startup
 const { notFound, errorHandler } = require('./middleware/error');
 const authRoutes = require('./routes/auth');
 const subjectRoutes = require('./routes/subjects');

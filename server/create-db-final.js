@@ -1,30 +1,34 @@
+const path = require('node:path');
 const { Client } = require('pg');
+const configPath = path.join(__dirname, '.env');
+require('dotenv').config({ path: configPath });
+const config = require('./src/config');
 
-async function run() {
+async function main() {
   const client = new Client({
-    user: 'postgres',
-    host: 'localhost',
-    database: 'postgres',
-    password: '10262001',
-    port: 5432,
+    host: config.pgHost,
+    port: config.pgPort,
+    database: config.pgMaintenanceDatabase,
+    user: config.pgUser,
+    password: config.pgPassword,
   });
+
   try {
     await client.connect();
-    try {
-      await client.query('CREATE DATABASE classmate;');
-      console.log('created');
-    } catch (e) {
-      if (e.message.includes('already exists')) {
-        console.log('exists');
-      } else {
-        console.log('create err', e.message);
-      }
+    await client.query(`CREATE DATABASE "${config.pgDatabase.replaceAll('"', '""')}"`);
+    console.log(`Created PostgreSQL database "${config.pgDatabase}".`);
+  } catch (error) {
+    if (error.code === '42P04') {
+      console.log(`PostgreSQL database "${config.pgDatabase}" already exists.`);
+      return;
     }
-  } catch (e) {
-    console.error('err', e.message);
+    throw error;
   } finally {
     await client.end();
   }
 }
 
-run();
+main().catch((error) => {
+  console.error('Failed to create PostgreSQL database:', error.message);
+  process.exitCode = 1;
+});

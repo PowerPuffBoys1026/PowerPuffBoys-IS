@@ -56,7 +56,7 @@ PowerPuffBoys/
 ## Current status
 
 Repo scaffolding, the **backend**, and the **Flutter client** are all in place. The
-Node + Express REST API is verified (`npm run smoke` → 25/25 checks passing) with SQLite
+Node + Express REST API is verified (`npm run smoke` → 35/35 checks passing) with PostgreSQL
 persistence and JWT auth, and the Flutter client (`client/`) is wired to it with login,
 dashboard, schedule, attendance, school-works, and subjects screens (verified on Web).
 See [`docs/kickoff.md`](docs/kickoff.md) to get set up.

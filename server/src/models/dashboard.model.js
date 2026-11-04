@@ -32,7 +32,7 @@ const DashboardModel = {
         WHERE w.user_id = $1
           AND w.status != 'done'
           AND w.due_at IS NOT NULL
-          AND DATE(w.due_at) <= DATE($2) + INTERVAL '7 days'
+          AND LEFT(w.due_at, 10)::date <= $2::date + INTERVAL '7 days'
         ORDER BY w.due_at`,
       [userId, today],
     );

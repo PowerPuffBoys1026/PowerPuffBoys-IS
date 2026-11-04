@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-**ClassMate** is a cross-platform client-server application designed to help students organize and track their academic activities in one place. It consists of a Flutter client (Android, iOS, Web, Windows, macOS) and a Node.js + Express REST API with SQLite database.
+**ClassMate** is a cross-platform client-server application designed to help students organize and track their academic activities in one place. It consists of a Flutter client (Android, iOS, Web, Windows, macOS) and a Node.js + Express REST API with a PostgreSQL database.
 
 ---
 
@@ -75,7 +75,7 @@
 - [x] **Input Validation** - Request validation using Zod schemas
 - [x] **Error Handling** - Consistent JSON error responses with proper HTTP status codes
 - [x] **Owner-Scoped Data** - All data filtered by authenticated user (prevents cross-user access)
-- [x] **SQLite Database** - Lightweight, file-based database with better-sqlite3
+- [x] **PostgreSQL Database** - Relational database accessed through node-postgres
 - [x] **Automatic Schema Creation** - Database tables created on first run
 - [x] **Foreign Key Constraints** - Data integrity with cascading deletes
 - [x] **Database Indexes** - Optimized queries for better performance

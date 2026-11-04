@@ -40,10 +40,10 @@ ClassMate lets a student:
 │  Node.js + Express REST API   (http://localhost:3000)        │
 │  Routing · Validation · Auth middleware · Business logic     │
 └───────────────┬──────────────────────────────────────────────┘
-                │  better-sqlite3 (synchronous, file-based)
+                │  PostgreSQL (via node-postgres)
                 ▼
 ┌──────────────────────────────────────────────────────────────┐
-│  SQLite database file   (server/data/classmate.db)           │
+│  PostgreSQL database   (classmate)                            │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -54,8 +54,8 @@ ClassMate lets a student:
 | Client | Flutter (Dart) — `http`/`dio`, `provider`, `flutter_secure_storage`, `flutter_local_notifications`, `table_calendar` |
 | API | Node.js 22 LTS + Express, `zod` validation, `cors`, `dotenv` |
 | Auth | JWT + `bcrypt` password hashing |
-| Database | SQLite via `better-sqlite3` |
-| Tooling | VS Code, Android Studio, Postman/Thunder Client, DB Browser for SQLite |
+| Database | PostgreSQL via `pg` |
+| Tooling | VS Code, Android Studio, Postman/Thunder Client, `psql` / pgAdmin |
 
 ---
 
@@ -75,7 +75,7 @@ PowerPuffBoys/
 ├── server/                 Node + Express REST API
 │   ├── src/
 │   │   ├── index.js        app entry / server bootstrap
-│   │   ├── db.js           SQLite connection + schema + seed
+│   │   ├── db.js           PostgreSQL connection pool + schema
 │   │   ├── middleware/     auth (JWT), error handler, validation
 │   │   └── routes/         auth, subjects, schedule, attendance, works, dashboard
 │   ├── data/               classmate.db (gitignored)
