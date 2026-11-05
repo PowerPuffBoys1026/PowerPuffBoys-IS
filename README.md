@@ -3,6 +3,8 @@ This is a solid work of Group 7: Mobile App
 
 > **New here? Read [`docs/kickoff.md`](docs/kickoff.md) first** — it's the project brief
 > and the setup guide in one file.
+>
+> **Running or stopping the app? See [`docs/run-and-stop.md`](docs/run-and-stop.md).**
 
 ---
 
