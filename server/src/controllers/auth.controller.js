@@ -9,16 +9,19 @@ const UserModel = require('../models/user.model');
 const { publicUser } = require('../views/user.view');
 
 const registerSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-  fullName: z.string().min(1, 'Full name is required'),
-  studentNo: z.string().optional(),
-  course: z.string().optional(),
+  email: z.string().trim().toLowerCase().email(),
+  password: z
+    .string()
+    .min(8, 'Password must be at least 8 characters')
+    .max(72, 'Password must be at most 72 characters'),
+  fullName: z.string().trim().min(1, 'Full name is required').max(120),
+  studentNo: z.string().trim().max(40).optional(),
+  course: z.string().trim().max(120).optional(),
 });
 
 const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(1, 'Password is required'),
+  email: z.string().trim().toLowerCase().email(),
+  password: z.string().min(1, 'Password is required').max(72),
 });
 
 function signToken(user) {
@@ -26,16 +29,16 @@ function signToken(user) {
 }
 
 const AuthController = {
-  register: (req, res) => {
+  register: async (req, res) => {
     const data = validate(registerSchema, req.body);
-    const email = data.email.toLowerCase();
+    const email = data.email;
 
-    if (UserModel.existsByEmail(email)) {
+    if (await UserModel.existsByEmail(email)) {
       throw new HttpError(409, 'Email is already registered');
     }
 
-    const hash = bcrypt.hashSync(data.password, 10);
-    const user = UserModel.create({
+    const hash = await bcrypt.hash(data.password, 10);
+    const user = await UserModel.create({
       email,
       passwordHash: hash,
       fullName: data.fullName,
@@ -46,19 +49,19 @@ const AuthController = {
     res.status(201).json({ token: signToken(user), user: publicUser(user) });
   },
 
-  login: (req, res) => {
+  login: async (req, res) => {
     const data = validate(loginSchema, req.body);
-    const user = UserModel.findByEmail(data.email.toLowerCase());
+    const user = await UserModel.findByEmail(data.email);
 
-    if (!user || !bcrypt.compareSync(data.password, user.password_hash)) {
+    if (!user || !(await bcrypt.compare(data.password, user.password_hash))) {
       throw new HttpError(401, 'Invalid email or password');
     }
 
     res.json({ token: signToken(user), user: publicUser(user) });
   },
 
-  me: (req, res) => {
-    const user = UserModel.findById(req.userId);
+  me: async (req, res) => {
+    const user = await UserModel.findById(req.userId);
     if (!user) throw new HttpError(404, 'User not found');
     res.json({ data: publicUser(user) });
   },

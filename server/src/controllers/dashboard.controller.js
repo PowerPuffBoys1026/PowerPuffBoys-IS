@@ -3,9 +3,10 @@ const { attendanceSummary } = require('../services/attendance');
 const { toDashboard } = require('../views/dashboard.view');
 
 const DashboardController = {
-  getToday: (req, res) => {
-    const today = DashboardModel.getToday(req.userId, new Date());
-    const attendanceWarnings = attendanceSummary(req.userId).filter((s) => s.warning);
+  getToday: async (req, res) => {
+    const today = await DashboardModel.getToday(req.userId, new Date());
+    const summary = await attendanceSummary(req.userId);
+    const attendanceWarnings = summary.filter((s) => s.warning);
 
     res.json({
       data: toDashboard({

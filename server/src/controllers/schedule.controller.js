@@ -1,6 +1,7 @@
 const { z } = require('zod');
 
 const { validate } = require('../utils/validate');
+const { parseId, parseOptionalInt, parsePagination } = require('../utils/parse');
 const { HttpError } = require('../utils/errors');
 const ScheduleModel = require('../models/schedule.model');
 const { toSlot } = require('../views/schedule.view');
@@ -12,42 +13,44 @@ const slotSchema = z.object({
   dayOfWeek: z.number().int().min(0).max(6),
   startTime: z.string().regex(timeRegex, 'startTime must be HH:MM (24h)'),
   endTime: z.string().regex(timeRegex, 'endTime must be HH:MM (24h)'),
-  room: z.string().nullish(),
-  modality: z.string().nullish(),
+  room: z.string().trim().max(120).nullish(),
+  modality: z.string().trim().max(60).nullish(),
 });
 
 const slotUpdateSchema = slotSchema.partial();
 
-function ownedSlot(id, userId) {
-  const row = ScheduleModel.findByIdAndUserId(Number(id), userId);
+async function ownedSlot(id, userId) {
+  const row = await ScheduleModel.findByIdAndUserId(parseId(id), userId);
   if (!row) throw new HttpError(404, 'Schedule slot not found');
   return row;
 }
 
-function ownedSubject(subjectId, userId) {
-  if (!ScheduleModel.subjectExistsAndOwned(subjectId, userId)) {
+function assertTimeRange(startTime, endTime) {
+  if (endTime <= startTime) {
+    throw new HttpError(400, 'endTime must be later than startTime');
+  }
+}
+
+async function ownedSubject(subjectId, userId) {
+  if (!(await ScheduleModel.subjectExistsAndOwned(subjectId, userId))) {
     throw new HttpError(404, 'Subject not found');
   }
 }
 
 const ScheduleController = {
-  getAll: (req, res) => {
-    const { day } = req.query;
-    if (day !== undefined && day !== '') {
-      const dayNum = Number(day);
-      if (!Number.isInteger(dayNum) || dayNum < 0 || dayNum > 6) {
-        throw new HttpError(400, 'day must be an integer between 0 and 6');
-      }
-    }
-    const rows = ScheduleModel.findAllByUserId(req.userId, day);
+  getAll: async (req, res) => {
+    const day = parseOptionalInt(req.query.day, { name: 'day', min: 0, max: 6 });
+    const { limit, offset } = parsePagination(req.query);
+    const rows = await ScheduleModel.findAllByUserId(req.userId, { day, limit, offset });
     res.json({ data: rows.map(toSlot) });
   },
 
-  create: (req, res) => {
+  create: async (req, res) => {
     const data = validate(slotSchema, req.body);
-    ownedSubject(data.subjectId, req.userId);
+    await ownedSubject(data.subjectId, req.userId);
+    assertTimeRange(data.startTime, data.endTime);
 
-    const slotId = ScheduleModel.create({
+    const slot = await ScheduleModel.create({
       subjectId: data.subjectId,
       dayOfWeek: data.dayOfWeek,
       startTime: data.startTime,
@@ -56,24 +59,26 @@ const ScheduleController = {
       modality: data.modality ?? null,
     });
 
-    res.status(201).json({ data: toSlot(ownedSlot(slotId, req.userId)) });
+    res.status(201).json({ data: toSlot(slot) });
   },
 
-  update: (req, res) => {
-    const id = Number(req.params.id);
-    const current = ownedSlot(id, req.userId);
+  update: async (req, res) => {
+    const id = parseId(req.params.id);
+    const current = await ownedSlot(id, req.userId);
     const data = validate(slotUpdateSchema, req.body);
 
-    if (data.subjectId !== undefined) ownedSubject(data.subjectId, req.userId);
+    if (data.subjectId !== undefined) await ownedSubject(data.subjectId, req.userId);
+    assertTimeRange(data.startTime ?? current.start_time, data.endTime ?? current.end_time);
 
-    ScheduleModel.update(id, data, current);
-    res.json({ data: toSlot(ownedSlot(id, req.userId)) });
+    const updated = await ScheduleModel.update(id, data, current, req.userId);
+    if (!updated) throw new HttpError(404, 'Schedule slot not found');
+    res.json({ data: toSlot(updated) });
   },
 
-  delete: (req, res) => {
-    const id = Number(req.params.id);
-    ownedSlot(id, req.userId);
-    ScheduleModel.delete(id);
+  delete: async (req, res) => {
+    const id = parseId(req.params.id);
+    const result = await ScheduleModel.delete(id, req.userId);
+    if (!result.rowCount) throw new HttpError(404, 'Schedule slot not found');
     res.status(204).end();
   },
 };

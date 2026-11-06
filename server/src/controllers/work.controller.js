@@ -1,12 +1,19 @@
 const { z } = require('zod');
 
 const { validate } = require('../utils/validate');
+const {
+  parseId,
+  parseOptionalInt,
+  parseOptionalDate,
+  parseOptionalEnum,
+  parsePagination,
+} = require('../utils/parse');
 const { HttpError } = require('../utils/errors');
 const WorkModel = require('../models/work.model');
 const { toWork } = require('../views/work.view');
 
 const workSchema = z.object({
-  title: z.string().min(1, 'Title is required'),
+  title: z.string().trim().min(1, 'Title is required').max(200),
   subjectId: z.number().int().positive().nullish(),
   type: z.enum(['assignment', 'quiz', 'exam', 'project']).optional(),
   dueAt: z
@@ -15,37 +22,45 @@ const workSchema = z.object({
     .nullish(),
   priority: z.enum(['low', 'medium', 'high']).optional(),
   status: z.enum(['todo', 'doing', 'done']).optional(),
-  notes: z.string().nullish(),
+  notes: z.string().max(5000).nullish(),
 });
 
 const workUpdateSchema = workSchema.partial();
 const statusSchema = z.object({ status: z.enum(['todo', 'doing', 'done']) });
 
-function ownedWork(id, userId) {
-  const row = WorkModel.findByIdAndUserId(Number(id), userId);
+async function ownedWork(id, userId) {
+  const row = await WorkModel.findByIdAndUserId(parseId(id), userId);
   if (!row) throw new HttpError(404, 'School work not found');
   return row;
 }
 
-function ownedSubjectIfAny(subjectId, userId) {
+async function ownedSubjectIfAny(subjectId, userId) {
   if (subjectId === undefined || subjectId === null) return;
-  if (!WorkModel.subjectExistsAndOwned(subjectId, userId)) {
+  if (!(await WorkModel.subjectExistsAndOwned(subjectId, userId))) {
     throw new HttpError(404, 'Subject not found');
   }
 }
 
 const WorkController = {
-  getAll: (req, res) => {
-    const { status, subjectId, dueBefore } = req.query;
-    const rows = WorkModel.findAllByUserId(req.userId, { status, subjectId, dueBefore });
+  getAll: async (req, res) => {
+    const status = parseOptionalEnum(req.query.status, 'status', ['todo', 'doing', 'done']);
+    const subjectId = parseOptionalInt(req.query.subjectId, {
+      name: 'subjectId',
+      min: 1,
+      max: Number.MAX_SAFE_INTEGER,
+    });
+    const dueBefore = parseOptionalDate(req.query.dueBefore, 'dueBefore');
+    const { limit, offset } = parsePagination(req.query);
+
+    const rows = await WorkModel.findAllByUserId(req.userId, { status, subjectId, dueBefore, limit, offset });
     res.json({ data: rows.map(toWork) });
   },
 
-  create: (req, res) => {
+  create: async (req, res) => {
     const data = validate(workSchema, req.body);
-    ownedSubjectIfAny(data.subjectId ?? null, req.userId);
+    await ownedSubjectIfAny(data.subjectId ?? null, req.userId);
 
-    const workId = WorkModel.create({
+    const work = await WorkModel.create({
       userId: req.userId,
       subjectId: data.subjectId ?? null,
       title: data.title,
@@ -56,36 +71,37 @@ const WorkController = {
       notes: data.notes ?? null,
     });
 
-    res.status(201).json({ data: toWork(ownedWork(workId, req.userId)) });
+    res.status(201).json({ data: toWork(work) });
   },
 
-  getOne: (req, res) => {
-    res.json({ data: toWork(ownedWork(req.params.id, req.userId)) });
+  getOne: async (req, res) => {
+    res.json({ data: toWork(await ownedWork(req.params.id, req.userId)) });
   },
 
-  update: (req, res) => {
-    const id = Number(req.params.id);
-    const current = ownedWork(id, req.userId);
+  update: async (req, res) => {
+    const id = parseId(req.params.id);
+    const current = await ownedWork(id, req.userId);
     const data = validate(workUpdateSchema, req.body);
 
-    if (data.subjectId !== undefined) ownedSubjectIfAny(data.subjectId, req.userId);
+    if (data.subjectId !== undefined) await ownedSubjectIfAny(data.subjectId, req.userId);
 
-    WorkModel.update(id, data, current);
-    res.json({ data: toWork(ownedWork(id, req.userId)) });
+    const updated = await WorkModel.update(id, data, current, req.userId);
+    if (!updated) throw new HttpError(404, 'School work not found');
+    res.json({ data: toWork(updated) });
   },
 
-  updateStatus: (req, res) => {
-    const id = Number(req.params.id);
-    ownedWork(id, req.userId);
+  updateStatus: async (req, res) => {
+    const id = parseId(req.params.id);
     const { status } = validate(statusSchema, req.body);
-    WorkModel.updateStatus(id, status);
-    res.json({ data: toWork(ownedWork(id, req.userId)) });
+    const updated = await WorkModel.updateStatus(id, status, req.userId);
+    if (!updated) throw new HttpError(404, 'School work not found');
+    res.json({ data: toWork(updated) });
   },
 
-  delete: (req, res) => {
-    const id = Number(req.params.id);
-    ownedWork(id, req.userId);
-    WorkModel.delete(id);
+  delete: async (req, res) => {
+    const id = parseId(req.params.id);
+    const result = await WorkModel.delete(id, req.userId);
+    if (!result.rowCount) throw new HttpError(404, 'School work not found');
     res.status(204).end();
   },
 };

@@ -10,7 +10,7 @@ function toWork(row) {
     subjectTitle: row.subject_title ?? null,
     color: row.color ?? null,
     type: row.type,
-    dueAt: row.due_at,
+    dueAt: row.due_at instanceof Date ? row.due_at.toISOString() : row.due_at,
     priority: row.priority,
     status: row.status,
     notes: row.notes,

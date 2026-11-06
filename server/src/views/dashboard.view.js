@@ -2,6 +2,8 @@
  * View: shapes dashboard rows into the dashboard JSON payload.
  */
 
+const { dateInTimeZone } = require('../utils/dates');
+
 function toClass(row) {
   return {
     slotId: row.id,
@@ -17,16 +19,19 @@ function toClass(row) {
 }
 
 function toDueSoon(row, today) {
+  const dueAt = row.due_at instanceof Date ? row.due_at.toISOString() : row.due_at;
+  const dueDate = dueAt ? dateInTimeZone(new Date(dueAt)) : null;
+
   return {
     id: row.id,
     title: row.title,
     type: row.type,
-    dueAt: row.due_at,
+    dueAt,
     priority: row.priority,
     status: row.status,
     subjectCode: row.subject_code,
     color: row.color,
-    overdue: row.due_at.slice(0, 10) < today,
+    overdue: dueDate !== null && dueDate < today,
   };
 }
 

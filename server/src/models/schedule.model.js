@@ -6,58 +6,90 @@ const SELECT_SLOT = `
     JOIN subjects s ON s.id = sc.subject_id`;
 
 const ScheduleModel = {
-  findAllByUserId: (userId, day) => {
+  findAllByUserId: async (userId, { day, limit, offset } = {}) => {
     const params = [userId];
-    let sql = `${SELECT_SLOT} WHERE s.user_id = ?`;
+    let sql = `${SELECT_SLOT} WHERE s.user_id = $1`;
 
     if (day !== undefined && day !== '') {
-      const dayNum = Number(day);
-      sql += ' AND sc.day_of_week = ?';
-      params.push(dayNum);
+      sql += ` AND sc.day_of_week = $${params.length + 1}`;
+      params.push(day);
     }
 
     sql += ' ORDER BY sc.day_of_week, sc.start_time';
-    return db.prepare(sql).all(...params);
+
+    if (limit !== undefined) {
+      sql += ` LIMIT $${params.length + 1}`;
+      params.push(limit);
+    }
+    if (offset !== undefined) {
+      sql += ` OFFSET $${params.length + 1}`;
+      params.push(offset);
+    }
+
+    const result = await db.query(sql, params);
+    return result.rows;
   },
 
-  findById: (id) => {
-    return db.prepare(`${SELECT_SLOT} WHERE sc.id = ?`).get(id);
+  findByIdAndUserId: async (id, userId) => {
+    const result = await db.query(`${SELECT_SLOT} WHERE sc.id = $1 AND s.user_id = $2`, [id, userId]);
+    return result.rows[0] || null;
   },
 
-  findByIdAndUserId: (id, userId) => {
-    return db.prepare(`${SELECT_SLOT} WHERE sc.id = ? AND s.user_id = ?`).get(id, userId);
+  create: async ({ subjectId, dayOfWeek, startTime, endTime, room, modality }) => {
+    const result = await db.query(
+      `WITH inserted AS (
+         INSERT INTO schedule_slots (subject_id, day_of_week, start_time, end_time, room, modality)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING *
+       )
+       SELECT i.*, s.code AS subject_code, s.title AS subject_title, s.color
+         FROM inserted i
+         JOIN subjects s ON s.id = i.subject_id`,
+      [subjectId, dayOfWeek, startTime, endTime, room ?? null, modality ?? null],
+    );
+    return result.rows[0];
   },
 
-  create: ({ subjectId, dayOfWeek, startTime, endTime, room, modality }) => {
-    const info = db
-      .prepare(
-        'INSERT INTO schedule_slots (subject_id, day_of_week, start_time, end_time, room, modality) VALUES (?, ?, ?, ?, ?, ?)',
-      )
-      .run(subjectId, dayOfWeek, startTime, endTime, room ?? null, modality ?? null);
-    return info.lastInsertRowid;
+  /** Update a slot owned by `userId`; returns the joined row or null. */
+  update: async (id, updates, current, userId) => {
+    const result = await db.query(
+      `WITH updated AS (
+         UPDATE schedule_slots sc
+            SET subject_id = $1, day_of_week = $2, start_time = $3, end_time = $4,
+                room = $5, modality = $6
+           FROM subjects s
+          WHERE sc.id = $7 AND sc.subject_id = s.id AND s.user_id = $8
+          RETURNING sc.*
+       )
+       SELECT u.*, s.code AS subject_code, s.title AS subject_title, s.color
+         FROM updated u
+         JOIN subjects s ON s.id = u.subject_id`,
+      [
+        updates.subjectId ?? current.subject_id,
+        updates.dayOfWeek ?? current.day_of_week,
+        updates.startTime ?? current.start_time,
+        updates.endTime ?? current.end_time,
+        updates.room !== undefined ? updates.room : current.room,
+        updates.modality !== undefined ? updates.modality : current.modality,
+        id,
+        userId,
+      ],
+    );
+    return result.rows[0] || null;
   },
 
-  update: (id, updates, current) => {
-    db.prepare(
-      'UPDATE schedule_slots SET subject_id = ?, day_of_week = ?, start_time = ?, end_time = ?, room = ?, modality = ? WHERE id = ?',
-    ).run(
-      updates.subjectId ?? current.subject_id,
-      updates.dayOfWeek ?? current.day_of_week,
-      updates.startTime ?? current.start_time,
-      updates.endTime ?? current.end_time,
-      updates.room !== undefined ? updates.room : current.room,
-      updates.modality !== undefined ? updates.modality : current.modality,
-      id,
+  delete: (id, userId) => {
+    return db.query(
+      `DELETE FROM schedule_slots sc
+        USING subjects s
+        WHERE sc.id = $1 AND sc.subject_id = s.id AND s.user_id = $2`,
+      [id, userId],
     );
   },
 
-  delete: (id) => {
-    return db.prepare('DELETE FROM schedule_slots WHERE id = ?').run(id);
-  },
-
-  subjectExistsAndOwned: (subjectId, userId) => {
-    const row = db.prepare('SELECT id FROM subjects WHERE id = ? AND user_id = ?').get(subjectId, userId);
-    return Boolean(row);
+  subjectExistsAndOwned: async (subjectId, userId) => {
+    const result = await db.query('SELECT id FROM subjects WHERE id = $1 AND user_id = $2', [subjectId, userId]);
+    return result.rowCount > 0;
   },
 };
 
