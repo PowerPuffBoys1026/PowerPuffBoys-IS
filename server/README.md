@@ -51,7 +51,13 @@ password: demo12345
 | `npm run db:create` | Create the PostgreSQL database configured in `.env` |
 | `npm run db:init` / `npm run migrate` | Apply pending migrations |
 | `npm run db:migrate:sqlite` | Import `data/classmate.db` into an empty PostgreSQL database |
+| `npm test` | Unit + API integration tests on a throwaway database |
 | `npm run smoke` | End-to-end test on an isolated DB/port |
+
+`npm test` uses Node's built-in test runner. Unit tests cover validation and
+time-zone helpers; API tests create and drop a temporary PostgreSQL database and
+never touch application data. GitHub Actions runs both `npm test` and
+`npm run smoke` against a PostgreSQL service on every push and pull request.
 
 ## API
 

@@ -12,6 +12,7 @@
     "db:init": "node src/migrate.js",
     "migrate": "node src/migrate.js",
     "db:migrate:sqlite": "node src/migrate-sqlite.js",
+    "test": "node --test",
     "smoke": "node scripts/smoke.js"
   },
   "engines": {
