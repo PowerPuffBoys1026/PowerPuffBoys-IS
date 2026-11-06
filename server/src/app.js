@@ -3,6 +3,8 @@ const cors = require('cors');
 const helmet = require('helmet');
 
 const config = require('./config');
+const db = require('./db');
+const { asyncHandler } = require('./utils/asyncHandler');
 const { notFound, errorHandler } = require('./middleware/error');
 const authRoutes = require('./routes/auth');
 const subjectRoutes = require('./routes/subjects');
@@ -26,7 +28,7 @@ app.use(
 app.use(express.json({ limit: '1mb' }));
 
 const API_ENDPOINTS = [
-  { method: 'GET', path: '/api/health', description: 'Liveness check' },
+  { method: 'GET', path: '/api/health', description: 'Health check (API + database)' },
   { method: 'POST', path: '/api/auth/register', description: 'Create an account' },
   { method: 'POST', path: '/api/auth/login', description: 'Log in and get a JWT' },
   { method: 'GET', path: '/api/auth/me', description: 'Current user' },
@@ -110,9 +112,29 @@ app.get('/api', (req, res) => {
   });
 });
 
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', service: 'classmate-api', time: new Date().toISOString() });
-});
+app.get(
+  '/api/health',
+  asyncHandler(async (req, res) => {
+    try {
+      await db.query('SELECT 1');
+    } catch (error) {
+      console.error('Health check failed:', error.message);
+      return res.status(503).json({
+        status: 'error',
+        service: 'classmate-api',
+        database: 'unavailable',
+        time: new Date().toISOString(),
+      });
+    }
+
+    return res.json({
+      status: 'ok',
+      service: 'classmate-api',
+      database: 'ok',
+      time: new Date().toISOString(),
+    });
+  }),
+);
 
 app.use('/api/auth', authRoutes);
 app.use('/api/subjects', subjectRoutes);

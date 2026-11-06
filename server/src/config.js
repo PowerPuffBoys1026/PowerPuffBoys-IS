@@ -17,10 +17,18 @@ const configuredOrigins = (process.env.CORS_ORIGIN || '')
   .map((origin) => origin.trim())
   .filter(Boolean);
 
+const appTimezone = process.env.APP_TIMEZONE || 'Asia/Manila';
+try {
+  new Intl.DateTimeFormat('en-US', { timeZone: appTimezone }).format();
+} catch {
+  throw new Error(`APP_TIMEZONE is not a valid IANA time zone: ${appTimezone}`);
+}
+
 const config = {
   port: Number(process.env.PORT) || 3000,
   jwtSecret,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
+  appTimezone,
   corsOrigins: configuredOrigins.length
     ? configuredOrigins
     : [
@@ -36,6 +44,9 @@ const config = {
   pgMaintenanceDatabase: process.env.PGMAINTENANCE_DB || 'postgres',
   pgUser: process.env.PGUSER || 'postgres',
   pgPassword: process.env.PGPASSWORD,
+  pgPoolMax: Number(process.env.PGPOOL_MAX) || 10,
+  pgConnectTimeoutMs: Number(process.env.PGCONNECT_TIMEOUT_MS) || 5000,
+  pgStatementTimeoutMs: Number(process.env.PGSTATEMENT_TIMEOUT_MS) || 10000,
   attendanceThreshold: Number(process.env.ATTENDANCE_THRESHOLD) || 20,
 };
 

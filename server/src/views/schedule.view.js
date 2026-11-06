@@ -1,6 +1,10 @@
 /**
  * View: shapes a schedule slot row into the slot JSON payload.
  */
+function formatTime(value) {
+  return typeof value === 'string' ? value.slice(0, 5) : value;
+}
+
 function toSlot(row) {
   return {
     id: row.id,
@@ -9,8 +13,8 @@ function toSlot(row) {
     subjectTitle: row.subject_title,
     color: row.color,
     dayOfWeek: row.day_of_week,
-    startTime: row.start_time,
-    endTime: row.end_time,
+    startTime: formatTime(row.start_time),
+    endTime: formatTime(row.end_time),
     room: row.room,
     modality: row.modality,
   };

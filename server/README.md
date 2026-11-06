@@ -14,6 +14,7 @@ cd server
 npm install
 copy .env.example .env    # Windows; then set JWT_SECRET and PGPASSWORD
 npm run db:create         # creates the PostgreSQL database once
+npm run db:init           # applies pending migrations (also runs on startup)
 npm run seed              # optional: creates a demo account + sample data
 npm run dev               # starts on http://localhost:3000 (auto-reload)
 ```
@@ -28,10 +29,10 @@ Browser origins allowed by CORS come from `CORS_ORIGIN` (comma-separated).
 `POST /auth/register` and `POST /auth/login` are limited to 20 attempts per
 15 minutes per IP.
 
-The API creates its tables on startup. To import the existing local SQLite data,
-create the database and run `npm run db:migrate:sqlite` before starting the API.
-The import is transactional, refuses a non-empty PostgreSQL database, and leaves
-the SQLite file unchanged.
+The API applies pending SQL migrations from `server/migrations/` on startup.
+To import the existing local SQLite data, create the database and run
+`npm run db:migrate:sqlite` before starting the API. The import is transactional,
+refuses a non-empty PostgreSQL database, and leaves the SQLite file unchanged.
 
 Demo credentials created by `npm run seed`:
 
@@ -48,6 +49,7 @@ password: demo12345
 | `npm run dev` | Run with auto-reload (`node --watch`) |
 | `npm run seed` | Insert demo user, subjects, schedule and works |
 | `npm run db:create` | Create the PostgreSQL database configured in `.env` |
+| `npm run db:init` / `npm run migrate` | Apply pending migrations |
 | `npm run db:migrate:sqlite` | Import `data/classmate.db` into an empty PostgreSQL database |
 | `npm run smoke` | End-to-end test on an isolated DB/port |
 
@@ -59,7 +61,7 @@ Every route except `POST /auth/register` and `POST /auth/login` needs
 
 | Method | Path | Notes |
 |---|---|---|
-| GET | `/health` | Liveness check |
+| GET | `/health` | Liveness + database check (`503` when PostgreSQL is down) |
 | POST | `/auth/register` | `{ email, password (8–72), fullName, studentNo?, course? }` |
 | POST | `/auth/login` | `{ email, password }` — rate limited |
 | GET | `/auth/me` | Current user |
@@ -103,9 +105,10 @@ Request flow: `routes` → `controllers` → `models`/`services` → `views` →
 server/
 ├── src/
 │   ├── app.js              Express app (no listen) — testable
-│   ├── index.js            starts the server
+│   ├── index.js            starts the server + graceful shutdown
 │   ├── config.js           env-driven config
-│   ├── db.js               PostgreSQL pool + schema
+│   ├── db.js               PostgreSQL pool + type parsers
+│   ├── migrate.js          migration runner (`npm run db:init`)
 │   ├── migrate-sqlite.js   one-time import from the old SQLite database
 │   ├── seed.js             demo data
 │   ├── routes/             URL → controller wiring only
@@ -114,13 +117,17 @@ server/
 │   ├── views/              JSON serializers (the API's "view")
 │   ├── services/           shared business logic
 │   ├── middleware/         auth (JWT), rate limiting, error handling
-│   └── utils/              validate (zod), parse (ids/query), HttpError
+│   └── utils/              validate (zod), parse (ids/query), dates, HttpError
+├── migrations/             ordered SQL files applied once
 ├── scripts/smoke.js        end-to-end smoke test
 └── data/                   legacy SQLite files (gitignored)
 ```
 
 ## Data notes
-- Dates are `YYYY-MM-DD`; times are `HH:MM` (24h); timestamps are ISO-8601.
+- `attendance_records.date` is a real `date`; schedule times are `time`;
+  `school_works.due_at` is `timestamptz`.
+- API dates are `YYYY-MM-DD`; times are `HH:MM` (24h); timestamps are ISO-8601.
+- "Today", overdue checks and day-of-week use `APP_TIMEZONE` (default `Asia/Manila`).
 - Attendance % = `present / (present + absent + late)`; `cancelled` is ignored.
 - The absence threshold defaults to 20% (`ATTENDANCE_THRESHOLD` in `.env`).
 - Every row is scoped to the JWT user — one account can never read another's data.

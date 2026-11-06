@@ -60,6 +60,7 @@ async function main() {
 
     let r = await req('GET', '/health');
     check('health responds ok', r.status === 200 && r.json.status === 'ok');
+    check('health reports database ok', r.json.database === 'ok');
 
     const email = `student+${Date.now()}@example.com`;
     r = await req('POST', '/auth/register', {
@@ -141,11 +142,19 @@ async function main() {
     check('schedule filter empty day', r.status === 200 && r.json.data.length === 0);
 
     const today = new Date().toISOString().slice(0, 10);
+
+    r = await req('POST', '/attendance', {
+      token,
+      body: { subjectId, date: '2026-02-31', status: 'present' },
+    });
+    check('invalid calendar date -> 400', r.status === 400);
+
     r = await req('POST', '/attendance', {
       token,
       body: { subjectId, slotId, date: today, status: 'present' },
     });
     check('mark attendance -> 201', r.status === 201);
+    check('attendance date is YYYY-MM-DD', r.json.data.date === today);
     const attendanceId = r.json.data.id;
 
     r = await req('PUT', `/attendance/${attendanceId}`, { token, body: { note: 'checked' } });
@@ -188,6 +197,7 @@ async function main() {
       body: { title: 'Lab 1', subjectId, dueAt, priority: 'high' },
     });
     check('create school work -> 201', r.status === 201);
+    check('work dueAt is ISO-8601', !Number.isNaN(Date.parse(r.json.data.dueAt)));
     const workId = r.json.data.id;
 
     r = await req('PUT', `/works/${workId}`, { token, body: { title: 'Lab assignment' } });
@@ -202,6 +212,7 @@ async function main() {
       r.status === 200 && Array.isArray(r.json.data.classes) && Array.isArray(r.json.data.dueSoon),
     );
     check('dashboard surfaces attendance warning', r.json.data.attendanceWarnings.length === 1);
+    check('dashboard date is YYYY-MM-DD', /^\d{4}-\d{2}-\d{2}$/.test(r.json.data.date));
 
     const email2 = `other+${Date.now()}@example.com`;
     r = await req('POST', '/auth/register', {

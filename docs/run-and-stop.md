@@ -48,6 +48,7 @@ npm install
 Copy-Item .env.example .env
 notepad .env
 npm run db:create
+npm run db:init
 ```
 
 Set these values in `server/.env`:
@@ -77,7 +78,7 @@ The API will not start if `JWT_SECRET` is empty.
 npm run seed
 ```
 
-This also creates the tables if they do not exist. It is safe to re-run.
+This also applies any pending migrations. It is safe to re-run.
 
 Demo login:
 
@@ -220,6 +221,7 @@ Start-Service postgresql-x64-18
 | `PORT` | `3000` | API port |
 | `JWT_SECRET` | — (required) | JWT signing secret; server refuses to start when empty |
 | `JWT_EXPIRES_IN` | `7d` | Login token lifetime |
+| `APP_TIMEZONE` | `Asia/Manila` | Time zone for "today", day-of-week and overdue checks |
 | `CORS_ORIGIN` | local dev origins | Comma-separated browser origins allowed by CORS |
 | `PGHOST` | `localhost` | PostgreSQL host |
 | `PGPORT` | `5432` | PostgreSQL port |
@@ -227,6 +229,9 @@ Start-Service postgresql-x64-18
 | `PGMAINTENANCE_DB` | `postgres` | Database used by `db:create` |
 | `PGUSER` | `postgres` | PostgreSQL user |
 | `PGPASSWORD` | — | PostgreSQL password (keep local) |
+| `PGPOOL_MAX` | `10` | Maximum PostgreSQL pool connections |
+| `PGCONNECT_TIMEOUT_MS` | `5000` | Timeout for acquiring a connection |
+| `PGSTATEMENT_TIMEOUT_MS` | `10000` | Per-query statement timeout |
 | `ATTENDANCE_THRESHOLD` | `20` | Absence percentage that triggers a warning |
 
 ---

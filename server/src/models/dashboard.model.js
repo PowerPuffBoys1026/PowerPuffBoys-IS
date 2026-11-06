@@ -1,18 +1,12 @@
 const db = require('../db');
+const { dateInTimeZone, dayOfWeekInTimeZone } = require('../utils/dates');
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-function localDateString(date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
-
 const DashboardModel = {
   getToday: async (userId, date = new Date()) => {
-    const dayOfWeek = date.getDay();
-    const today = localDateString(date);
+    const dayOfWeek = dayOfWeekInTimeZone(date);
+    const today = dateInTimeZone(date);
 
     const classesResult = await db.query(
       `SELECT sc.id, sc.start_time, sc.end_time, sc.room, sc.modality,
@@ -32,7 +26,7 @@ const DashboardModel = {
         WHERE w.user_id = $1
           AND w.status != 'done'
           AND w.due_at IS NOT NULL
-          AND LEFT(w.due_at, 10)::date <= $2::date + INTERVAL '7 days'
+          AND w.due_at::date <= $2::date + INTERVAL '7 days'
         ORDER BY w.due_at`,
       [userId, today],
     );

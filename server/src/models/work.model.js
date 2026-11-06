@@ -25,11 +25,11 @@ const WorkModel = {
       params.push(Number(subjectId));
     }
     if (dueBefore) {
-      sql += ` AND w.due_at IS NOT NULL AND LEFT(w.due_at, 10)::date <= $${params.length + 1}::date`;
+      sql += ` AND w.due_at IS NOT NULL AND w.due_at::date <= $${params.length + 1}::date`;
       params.push(dueBefore);
     }
 
-    sql += " ORDER BY (w.status = 'done'), COALESCE(w.due_at, '9999-12-31')";
+    sql += " ORDER BY (w.status = 'done'), COALESCE(w.due_at, '9999-12-31'::timestamptz)";
     const result = await db.query(sql, params);
     return result.rows;
   },
