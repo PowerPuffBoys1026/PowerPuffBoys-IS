@@ -129,7 +129,10 @@ server/
 │   ├── middleware/         auth (JWT), rate limiting, error handling
 │   └── utils/              validate (zod), parse (ids/query), dates, HttpError
 ├── migrations/             ordered SQL files applied once
-├── scripts/smoke.js        end-to-end smoke test
+├── scripts/
+│   ├── create-db.js        creates the PostgreSQL database
+│   └── smoke.js            end-to-end smoke test
+├── test/                   unit + API integration tests
 └── data/                   legacy SQLite files (gitignored)
 ```
 

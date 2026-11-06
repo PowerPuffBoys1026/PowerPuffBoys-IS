@@ -1,8 +1,8 @@
 const path = require('node:path');
 const { Client } = require('pg');
-const configPath = path.join(__dirname, '.env');
-require('dotenv').config({ path: configPath });
-const config = require('./src/config');
+
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+const config = require('../src/config');
 
 async function main() {
   const client = new Client({
