@@ -11,7 +11,6 @@
     "db:create": "node scripts/create-db.js",
     "db:init": "node src/migrate.js",
     "migrate": "node src/migrate.js",
-    "db:migrate:sqlite": "node src/migrate-sqlite.js",
     "test": "node --test",
     "smoke": "node scripts/smoke.js"
   },
@@ -21,7 +20,6 @@
   "license": "UNLICENSED",
   "dependencies": {
     "bcryptjs": "^2.4.3",
-    "better-sqlite3": "^13.0.3",
     "cors": "^2.8.6",
     "dotenv": "^16.6.1",
     "express": "^4.22.3",

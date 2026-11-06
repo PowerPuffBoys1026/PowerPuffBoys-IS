@@ -30,9 +30,6 @@ Browser origins allowed by CORS come from `CORS_ORIGIN` (comma-separated).
 15 minutes per IP.
 
 The API applies pending SQL migrations from `server/migrations/` on startup.
-To import the existing local SQLite data, create the database and run
-`npm run db:migrate:sqlite` before starting the API. The import is transactional,
-refuses a non-empty PostgreSQL database, and leaves the SQLite file unchanged.
 
 Demo credentials created by `npm run seed`:
 
@@ -50,7 +47,6 @@ password: demo12345
 | `npm run seed` | Insert demo user, subjects, schedule and works |
 | `npm run db:create` | Create the PostgreSQL database configured in `.env` |
 | `npm run db:init` / `npm run migrate` | Apply pending migrations |
-| `npm run db:migrate:sqlite` | Import `data/classmate.db` into an empty PostgreSQL database |
 | `npm test` | Unit + API integration tests on a throwaway database |
 | `npm run smoke` | End-to-end test on an isolated DB/port |
 
@@ -119,7 +115,6 @@ server/
 │   ├── config.js           env-driven config
 │   ├── db.js               PostgreSQL pool + type parsers
 │   ├── migrate.js          migration runner (`npm run db:init`)
-│   ├── migrate-sqlite.js   one-time import from the old SQLite database
 │   ├── seed.js             demo data
 │   ├── routes/             URL → controller wiring only
 │   ├── controllers/        HTTP handlers (req/res)
@@ -133,7 +128,6 @@ server/
 │   ├── create-db.js        creates the PostgreSQL database
 │   └── smoke.js            end-to-end smoke test
 ├── test/                   unit + API integration tests
-└── data/                   legacy SQLite files (gitignored)
 ```
 
 ## Data notes
