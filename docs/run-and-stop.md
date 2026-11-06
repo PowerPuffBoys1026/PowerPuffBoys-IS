@@ -54,7 +54,8 @@ Set these values in `server/.env`:
 
 ```ini
 PORT=3000
-JWT_SECRET=dev-secret-change-me
+JWT_SECRET=<long random string; see below>
+CORS_ORIGIN=http://localhost:8080,http://127.0.0.1:8080
 PGHOST=localhost
 PGPORT=5432
 PGDATABASE=classmate
@@ -63,6 +64,10 @@ PGUSER=postgres
 PGPASSWORD=your-postgres-password
 ATTENDANCE_THRESHOLD=20
 ```
+
+Generate the JWT secret with
+`node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"`.
+The API will not start if `JWT_SECRET` is empty.
 
 `server/.env` is gitignored. Never commit real passwords.
 
@@ -213,8 +218,9 @@ Start-Service postgresql-x64-18
 | Variable | Default | Purpose |
 |---|---|---|
 | `PORT` | `3000` | API port |
-| `JWT_SECRET` | `dev-secret-change-me` | JWT signing secret |
+| `JWT_SECRET` | — (required) | JWT signing secret; server refuses to start when empty |
 | `JWT_EXPIRES_IN` | `7d` | Login token lifetime |
+| `CORS_ORIGIN` | local dev origins | Comma-separated browser origins allowed by CORS |
 | `PGHOST` | `localhost` | PostgreSQL host |
 | `PGPORT` | `5432` | PostgreSQL port |
 | `PGDATABASE` | `classmate` | Application database |

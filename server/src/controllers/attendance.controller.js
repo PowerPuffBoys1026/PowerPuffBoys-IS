@@ -1,6 +1,7 @@
 const { z } = require('zod');
 
 const { validate } = require('../utils/validate');
+const { parseId, parseOptionalInt, parseOptionalDate } = require('../utils/parse');
 const { HttpError } = require('../utils/errors');
 const AttendanceModel = require('../models/attendance.model');
 const { attendanceSummary } = require('../services/attendance');
@@ -25,9 +26,16 @@ async function ownedSubject(subjectId, userId) {
 }
 
 async function ownedRecord(id, userId) {
-  const row = await AttendanceModel.findByIdAndUserId(Number(id), userId);
+  const row = await AttendanceModel.findByIdAndUserId(id, userId);
   if (!row) throw new HttpError(404, 'Attendance record not found');
   return row;
+}
+
+async function ownedSlot(slotId, subjectId, userId) {
+  if (slotId === null || slotId === undefined) return;
+  if (!(await AttendanceModel.slotExistsForSubjectAndUser(slotId, subjectId, userId))) {
+    throw new HttpError(404, 'Schedule slot not found for this subject');
+  }
 }
 
 const AttendanceController = {
@@ -36,7 +44,14 @@ const AttendanceController = {
   },
 
   getAll: async (req, res) => {
-    const { subjectId, from, to } = req.query;
+    const subjectId = parseOptionalInt(req.query.subjectId, {
+      name: 'subjectId',
+      min: 1,
+      max: Number.MAX_SAFE_INTEGER,
+    });
+    const from = parseOptionalDate(req.query.from, 'from');
+    const to = parseOptionalDate(req.query.to, 'to');
+
     const rows = await AttendanceModel.findAllByUserId(req.userId, { subjectId, from, to });
     res.json({ data: rows.map(toRecord) });
   },
@@ -44,6 +59,7 @@ const AttendanceController = {
   create: async (req, res) => {
     const data = validate(attendanceSchema, req.body);
     await ownedSubject(data.subjectId, req.userId);
+    await ownedSlot(data.slotId ?? null, data.subjectId, req.userId);
 
     const duplicate = await AttendanceModel.findDuplicate(data.subjectId, data.date, data.slotId ?? null);
     if (duplicate) {
@@ -62,18 +78,28 @@ const AttendanceController = {
   },
 
   update: async (req, res) => {
-    const id = Number(req.params.id);
+    const id = parseId(req.params.id);
     const current = await ownedRecord(id, req.userId);
     const data = validate(attendanceUpdateSchema, req.body);
 
-    if (data.subjectId !== undefined) await ownedSubject(data.subjectId, req.userId);
+    const subjectId = data.subjectId ?? current.subject_id;
+    const slotId = data.slotId !== undefined ? data.slotId : current.slot_id;
+    const date = data.date ?? current.date;
+
+    if (data.subjectId !== undefined) await ownedSubject(subjectId, req.userId);
+    await ownedSlot(slotId, subjectId, req.userId);
+
+    const duplicate = await AttendanceModel.findDuplicate(subjectId, date, slotId ?? null, id);
+    if (duplicate) {
+      throw new HttpError(409, 'Attendance for this session is already recorded');
+    }
 
     await AttendanceModel.update(id, data, current);
     res.json({ data: toRecord(await ownedRecord(id, req.userId)) });
   },
 
   delete: async (req, res) => {
-    const id = Number(req.params.id);
+    const id = parseId(req.params.id);
     await ownedRecord(id, req.userId);
     await AttendanceModel.delete(id);
     res.status(204).end();

@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
 
+const config = require('./config');
 const { notFound, errorHandler } = require('./middleware/error');
 const authRoutes = require('./routes/auth');
 const subjectRoutes = require('./routes/subjects');
@@ -12,8 +14,16 @@ const noteRoutes = require('./routes/notes');
 
 const app = express();
 
-app.use(cors());
-app.use(express.json());
+app.disable('x-powered-by');
+// The API returns JSON and one small HTML landing page; helmet's default CSP
+// would block that page's inline stylesheet.
+app.use(helmet({ contentSecurityPolicy: false }));
+app.use(
+  cors({
+    origin: config.corsOrigins.includes('*') ? true : config.corsOrigins,
+  }),
+);
+app.use(express.json({ limit: '1mb' }));
 
 const API_ENDPOINTS = [
   { method: 'GET', path: '/api/health', description: 'Liveness check' },

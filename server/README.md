@@ -18,6 +18,16 @@ npm run seed              # optional: creates a demo account + sample data
 npm run dev               # starts on http://localhost:3000 (auto-reload)
 ```
 
+`JWT_SECRET` is required — the server refuses to start without it. Generate one with:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
+```
+
+Browser origins allowed by CORS come from `CORS_ORIGIN` (comma-separated).
+`POST /auth/register` and `POST /auth/login` are limited to 20 attempts per
+15 minutes per IP.
+
 The API creates its tables on startup. To import the existing local SQLite data,
 create the database and run `npm run db:migrate:sqlite` before starting the API.
 The import is transactional, refuses a non-empty PostgreSQL database, and leaves
@@ -50,22 +60,27 @@ Every route except `POST /auth/register` and `POST /auth/login` needs
 | Method | Path | Notes |
 |---|---|---|
 | GET | `/health` | Liveness check |
-| POST | `/auth/register` | `{ email, password (8+), fullName, studentNo?, course? }` |
-| POST | `/auth/login` | `{ email, password }` |
+| POST | `/auth/register` | `{ email, password (8–72), fullName, studentNo?, course? }` |
+| POST | `/auth/login` | `{ email, password }` — rate limited |
 | GET | `/auth/me` | Current user |
 | GET/POST | `/subjects` | List / create |
 | GET/PUT/DELETE | `/subjects/:id` | Read / update / delete |
 | GET/POST | `/schedule` | `?day=0..6` filter; slot needs `subjectId, dayOfWeek, startTime, endTime` |
-| PUT/DELETE | `/schedule/:id` | |
-| GET/POST | `/attendance` | Mark `{ subjectId, slotId?, date, status }` |
+| PUT/DELETE | `/schedule/:id` | `endTime` must be later than `startTime` |
+| GET/POST | `/attendance` | Mark `{ subjectId, slotId?, date, status }`; `slotId` must belong to the subject |
 | GET | `/attendance/summary` | Per-subject rate + absence warning |
+| PUT/DELETE | `/attendance/:id` | Cannot create a duplicate session |
 | GET/POST | `/works` | School works; filter `?status=&subjectId=&dueBefore=` |
 | GET/PUT/DELETE | `/works/:id` | |
 | PATCH | `/works/:id/status` | `{ status: todo\|doing\|done }` |
+| GET/POST | `/notes` | Notes; filter `?search=&tag=&pinned=true\|false` |
+| GET/PUT/DELETE | `/notes/:id` | Read / update / delete |
+| PATCH | `/notes/:id/pin` | Toggle the pinned flag |
 | GET | `/dashboard/today` | Today's classes + due-soon + warnings |
 
 **Error shape:** `{ "error": { "message": "…", "details": [ { "path", "message" } ] } }`
-with status codes `400` validation, `401` auth, `404` not found, `409` conflict.
+with status codes `400` validation, `401` auth, `404` not found, `409` conflict,
+`413` body too large, `429` too many auth attempts.
 
 ## Architecture (MVC)
 
@@ -78,7 +93,7 @@ The API follows a Model–View–Controller split:
 | **Controller** | `src/controllers/` | Reads the request, validates input, calls models/services, sends the response. |
 | Routes | `src/routes/` | Maps URLs to controller actions only. |
 | Services | `src/services/` | Business rules shared across models (attendance summary). |
-| Middleware | `src/middleware/` | Cross-cutting concerns (JWT auth, error handling). |
+| Middleware | `src/middleware/` | Cross-cutting concerns (JWT auth, rate limiting, error handling). |
 
 Request flow: `routes` → `controllers` → `models`/`services` → `views` → JSON response.
 
@@ -98,8 +113,8 @@ server/
 │   ├── models/             database queries per entity
 │   ├── views/              JSON serializers (the API's "view")
 │   ├── services/           shared business logic
-│   ├── middleware/         auth (JWT), error handling
-│   └── utils/              validate (zod), HttpError
+│   ├── middleware/         auth (JWT), rate limiting, error handling
+│   └── utils/              validate (zod), parse (ids/query), HttpError
 ├── scripts/smoke.js        end-to-end smoke test
 └── data/                   legacy SQLite files (gitignored)
 ```

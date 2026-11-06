@@ -1,6 +1,7 @@
 const { z } = require('zod');
 
 const { validate } = require('../utils/validate');
+const { parseId } = require('../utils/parse');
 const { HttpError } = require('../utils/errors');
 const SubjectModel = require('../models/subject.model');
 const { toSubject } = require('../views/subject.view');
@@ -19,7 +20,7 @@ const subjectSchema = z.object({
 const subjectUpdateSchema = subjectSchema.partial();
 
 async function ownedSubject(id, userId) {
-  const row = await SubjectModel.findByIdAndUserId(Number(id), userId);
+  const row = await SubjectModel.findByIdAndUserId(parseId(id), userId);
   if (!row) throw new HttpError(404, 'Subject not found');
   return row;
 }
@@ -49,7 +50,7 @@ const SubjectController = {
   },
 
   update: async (req, res) => {
-    const id = Number(req.params.id);
+    const id = parseId(req.params.id);
     const current = await ownedSubject(id, req.userId);
     const data = validate(subjectUpdateSchema, req.body);
 
@@ -65,7 +66,7 @@ const SubjectController = {
   },
 
   delete: async (req, res) => {
-    const id = Number(req.params.id);
+    const id = parseId(req.params.id);
     await ownedSubject(id, req.userId);
     await SubjectModel.delete(id);
     res.status(204).end();

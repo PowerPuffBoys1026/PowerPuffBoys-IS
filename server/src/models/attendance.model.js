@@ -6,19 +6,32 @@ const AttendanceModel = {
     return result.rowCount > 0;
   },
 
-  findDuplicate: async (subjectId, date, slotId) => {
+  slotExistsForSubjectAndUser: async (slotId, subjectId, userId) => {
+    const result = await db.query(
+      `SELECT 1
+         FROM schedule_slots sc
+         JOIN subjects s ON s.id = sc.subject_id
+        WHERE sc.id = $1 AND sc.subject_id = $2 AND s.user_id = $3`,
+      [slotId, subjectId, userId],
+    );
+    return result.rowCount > 0;
+  },
+
+  findDuplicate: async (subjectId, date, slotId, excludeId = null) => {
     let result;
     if (slotId === null || slotId === undefined) {
       result = await db.query(
         `SELECT id FROM attendance_records
-          WHERE subject_id = $1 AND date = $2 AND slot_id IS NULL`,
-        [subjectId, date],
+          WHERE subject_id = $1 AND date = $2 AND slot_id IS NULL
+            AND ($3::int IS NULL OR id <> $3)`,
+        [subjectId, date, excludeId],
       );
     } else {
       result = await db.query(
         `SELECT id FROM attendance_records
-          WHERE subject_id = $1 AND date = $2 AND slot_id = $3`,
-        [subjectId, date, slotId],
+          WHERE subject_id = $1 AND date = $2 AND slot_id = $3
+            AND ($4::int IS NULL OR id <> $4)`,
+        [subjectId, date, slotId, excludeId],
       );
     }
     return result.rows[0] || null;

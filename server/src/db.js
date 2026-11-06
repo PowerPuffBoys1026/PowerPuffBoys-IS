@@ -90,6 +90,23 @@ CREATE INDEX IF NOT EXISTS idx_works_user           ON school_works(user_id);
 CREATE INDEX IF NOT EXISTS idx_works_due            ON school_works(due_at);
 CREATE INDEX IF NOT EXISTS idx_notes_user           ON notes(user_id);
 CREATE INDEX IF NOT EXISTS idx_notes_updated        ON notes(updated_at);
+
+-- Keep the oldest row if old data already contains duplicates, then enforce
+-- uniqueness at the database level so concurrent requests cannot race.
+DELETE FROM attendance_records a
+ USING attendance_records b
+ WHERE a.id > b.id
+   AND a.subject_id = b.subject_id
+   AND a.date = b.date
+   AND a.slot_id IS NOT DISTINCT FROM b.slot_id;
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_attendance_slot
+  ON attendance_records (subject_id, date, slot_id)
+  WHERE slot_id IS NOT NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_attendance_no_slot
+  ON attendance_records (subject_id, date)
+  WHERE slot_id IS NULL;
 `;
 
 async function initDb() {

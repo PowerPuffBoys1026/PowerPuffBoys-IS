@@ -1,6 +1,12 @@
 const { z } = require('zod');
 
 const { validate } = require('../utils/validate');
+const {
+  parseId,
+  parseOptionalInt,
+  parseOptionalDate,
+  parseOptionalEnum,
+} = require('../utils/parse');
 const { HttpError } = require('../utils/errors');
 const WorkModel = require('../models/work.model');
 const { toWork } = require('../views/work.view');
@@ -22,7 +28,7 @@ const workUpdateSchema = workSchema.partial();
 const statusSchema = z.object({ status: z.enum(['todo', 'doing', 'done']) });
 
 async function ownedWork(id, userId) {
-  const row = await WorkModel.findByIdAndUserId(Number(id), userId);
+  const row = await WorkModel.findByIdAndUserId(parseId(id), userId);
   if (!row) throw new HttpError(404, 'School work not found');
   return row;
 }
@@ -36,7 +42,14 @@ async function ownedSubjectIfAny(subjectId, userId) {
 
 const WorkController = {
   getAll: async (req, res) => {
-    const { status, subjectId, dueBefore } = req.query;
+    const status = parseOptionalEnum(req.query.status, 'status', ['todo', 'doing', 'done']);
+    const subjectId = parseOptionalInt(req.query.subjectId, {
+      name: 'subjectId',
+      min: 1,
+      max: Number.MAX_SAFE_INTEGER,
+    });
+    const dueBefore = parseOptionalDate(req.query.dueBefore, 'dueBefore');
+
     const rows = await WorkModel.findAllByUserId(req.userId, { status, subjectId, dueBefore });
     res.json({ data: rows.map(toWork) });
   },
@@ -64,7 +77,7 @@ const WorkController = {
   },
 
   update: async (req, res) => {
-    const id = Number(req.params.id);
+    const id = parseId(req.params.id);
     const current = await ownedWork(id, req.userId);
     const data = validate(workUpdateSchema, req.body);
 
@@ -75,7 +88,7 @@ const WorkController = {
   },
 
   updateStatus: async (req, res) => {
-    const id = Number(req.params.id);
+    const id = parseId(req.params.id);
     await ownedWork(id, req.userId);
     const { status } = validate(statusSchema, req.body);
     await WorkModel.updateStatus(id, status);
@@ -83,7 +96,7 @@ const WorkController = {
   },
 
   delete: async (req, res) => {
-    const id = Number(req.params.id);
+    const id = parseId(req.params.id);
     await ownedWork(id, req.userId);
     await WorkModel.delete(id);
     res.status(204).end();

@@ -1,6 +1,7 @@
 const { z } = require('zod');
 
 const { validate } = require('../utils/validate');
+const { parseId, parseOptionalBoolean, parseOptionalString } = require('../utils/parse');
 const { HttpError } = require('../utils/errors');
 const NoteModel = require('../models/note.model');
 const { toNote } = require('../views/note.view');
@@ -16,14 +17,17 @@ const noteSchema = z.object({
 const noteUpdateSchema = noteSchema.partial();
 
 async function ownedNote(id, userId) {
-  const row = await NoteModel.findByIdAndUserId(Number(id), userId);
+  const row = await NoteModel.findByIdAndUserId(parseId(id), userId);
   if (!row) throw new HttpError(404, 'Note not found');
   return row;
 }
 
 const NoteController = {
   getAll: async (req, res) => {
-    const { search, tag, pinned } = req.query;
+    const search = parseOptionalString(req.query.search, 'search');
+    const tag = parseOptionalString(req.query.tag, 'tag');
+    const pinned = parseOptionalBoolean(req.query.pinned, 'pinned');
+
     const rows = await NoteModel.findAllByUserId(req.userId, { search, tag, pinned });
     res.json({ data: rows.map(toNote) });
   },
@@ -46,7 +50,7 @@ const NoteController = {
   },
 
   update: async (req, res) => {
-    const id = Number(req.params.id);
+    const id = parseId(req.params.id);
     const current = await ownedNote(id, req.userId);
     const data = validate(noteUpdateSchema, req.body);
     await NoteModel.update(id, data, current);
@@ -54,14 +58,14 @@ const NoteController = {
   },
 
   togglePin: async (req, res) => {
-    const id = Number(req.params.id);
+    const id = parseId(req.params.id);
     await ownedNote(id, req.userId);
     await NoteModel.togglePin(id);
     res.json({ data: toNote(await ownedNote(id, req.userId)) });
   },
 
   delete: async (req, res) => {
-    const id = Number(req.params.id);
+    const id = parseId(req.params.id);
     await ownedNote(id, req.userId);
     await NoteModel.delete(id);
     res.status(204).end();

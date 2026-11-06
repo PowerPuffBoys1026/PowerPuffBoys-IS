@@ -79,6 +79,21 @@ async function main() {
     r = await req('GET', '/subjects');
     check('protected route without token -> 401', r.status === 401);
 
+    r = await req('GET', '/subjects/abc', { token });
+    check('invalid numeric id -> 400', r.status === 400);
+
+    r = await req('GET', '/works?subjectId=abc', { token });
+    check('invalid subjectId query -> 400', r.status === 400);
+
+    r = await req('GET', '/works?dueBefore=notadate', { token });
+    check('invalid dueBefore query -> 400', r.status === 400);
+
+    r = await req('GET', '/attendance?from=2026-13-40', { token });
+    check('invalid attendance date query -> 400', r.status === 400);
+
+    r = await req('GET', '/notes?pinned=yes', { token });
+    check('invalid boolean query -> 400', r.status === 400);
+
     r = await req('POST', '/auth/login', { body: { email, password: 'password123' } });
     check('login returns token', r.status === 200 && !!r.json.token);
 
@@ -114,6 +129,12 @@ async function main() {
     });
     check('invalid time -> 400', r.status === 400);
 
+    r = await req('POST', '/schedule', {
+      token,
+      body: { subjectId, dayOfWeek: 1, startTime: '10:00', endTime: '09:30' },
+    });
+    check('endTime before startTime -> 400', r.status === 400);
+
     r = await req('GET', '/schedule?day=1', { token });
     check('schedule filter matches day', r.status === 200 && r.json.data.length === 1);
     r = await req('GET', '/schedule?day=3', { token });
@@ -136,10 +157,21 @@ async function main() {
     });
     check('duplicate attendance -> 409', r.status === 409);
 
-    await req('POST', '/attendance', {
+    r = await req('POST', '/attendance', {
       token,
       body: { subjectId, date: today, status: 'absent' },
     });
+    check('mark attendance without slot -> 201', r.status === 201);
+    const noSlotAttendanceId = r.json.data.id;
+
+    r = await req('POST', '/attendance', {
+      token,
+      body: { subjectId, date: today, status: 'absent' },
+    });
+    check('duplicate attendance without slot -> 409', r.status === 409);
+
+    r = await req('PUT', `/attendance/${noSlotAttendanceId}`, { token, body: { slotId } });
+    check('attendance update cannot create a duplicate -> 409', r.status === 409);
 
     r = await req('GET', `/attendance?subjectId=${subjectId}&from=${today}&to=${today}`, { token });
     check('attendance filters', r.status === 200 && r.json.data.length === 2);
@@ -202,6 +234,24 @@ async function main() {
 
     r = await req('DELETE', `/notes/${noteId}`, { token });
     check('delete note', r.status === 204);
+
+    r = await req('POST', '/subjects', {
+      token,
+      body: { code: 'CS102', title: 'Data Structures' },
+    });
+    const otherSubjectId = r.json.data.id;
+
+    r = await req('POST', '/schedule', {
+      token,
+      body: { subjectId: otherSubjectId, dayOfWeek: 2, startTime: '10:00', endTime: '11:00' },
+    });
+    const otherSlotId = r.json.data.id;
+
+    r = await req('POST', '/attendance', {
+      token,
+      body: { subjectId, slotId: otherSlotId, date: today, status: 'present' },
+    });
+    check('attendance slot must belong to the subject -> 404', r.status === 404);
 
     console.log(`\nAll ${passed} checks passed.`);
   } finally {

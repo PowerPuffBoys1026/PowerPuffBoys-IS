@@ -1,6 +1,7 @@
 const { z } = require('zod');
 
 const { validate } = require('../utils/validate');
+const { parseId, parseOptionalInt } = require('../utils/parse');
 const { HttpError } = require('../utils/errors');
 const ScheduleModel = require('../models/schedule.model');
 const { toSlot } = require('../views/schedule.view');
@@ -19,9 +20,15 @@ const slotSchema = z.object({
 const slotUpdateSchema = slotSchema.partial();
 
 async function ownedSlot(id, userId) {
-  const row = await ScheduleModel.findByIdAndUserId(Number(id), userId);
+  const row = await ScheduleModel.findByIdAndUserId(parseId(id), userId);
   if (!row) throw new HttpError(404, 'Schedule slot not found');
   return row;
+}
+
+function assertTimeRange(startTime, endTime) {
+  if (endTime <= startTime) {
+    throw new HttpError(400, 'endTime must be later than startTime');
+  }
 }
 
 async function ownedSubject(subjectId, userId) {
@@ -32,13 +39,7 @@ async function ownedSubject(subjectId, userId) {
 
 const ScheduleController = {
   getAll: async (req, res) => {
-    const { day } = req.query;
-    if (day !== undefined && day !== '') {
-      const dayNum = Number(day);
-      if (!Number.isInteger(dayNum) || dayNum < 0 || dayNum > 6) {
-        throw new HttpError(400, 'day must be an integer between 0 and 6');
-      }
-    }
+    const day = parseOptionalInt(req.query.day, { name: 'day', min: 0, max: 6 });
     const rows = await ScheduleModel.findAllByUserId(req.userId, day);
     res.json({ data: rows.map(toSlot) });
   },
@@ -46,6 +47,7 @@ const ScheduleController = {
   create: async (req, res) => {
     const data = validate(slotSchema, req.body);
     await ownedSubject(data.subjectId, req.userId);
+    assertTimeRange(data.startTime, data.endTime);
 
     const slotId = await ScheduleModel.create({
       subjectId: data.subjectId,
@@ -60,18 +62,19 @@ const ScheduleController = {
   },
 
   update: async (req, res) => {
-    const id = Number(req.params.id);
+    const id = parseId(req.params.id);
     const current = await ownedSlot(id, req.userId);
     const data = validate(slotUpdateSchema, req.body);
 
     if (data.subjectId !== undefined) await ownedSubject(data.subjectId, req.userId);
+    assertTimeRange(data.startTime ?? current.start_time, data.endTime ?? current.end_time);
 
     await ScheduleModel.update(id, data, current);
     res.json({ data: toSlot(await ownedSlot(id, req.userId)) });
   },
 
   delete: async (req, res) => {
-    const id = Number(req.params.id);
+    const id = parseId(req.params.id);
     await ownedSlot(id, req.userId);
     await ScheduleModel.delete(id);
     res.status(204).end();
