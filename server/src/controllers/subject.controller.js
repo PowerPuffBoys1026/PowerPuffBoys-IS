@@ -1,15 +1,15 @@
 const { z } = require('zod');
 
 const { validate } = require('../utils/validate');
-const { parseId } = require('../utils/parse');
+const { parseId, parsePagination } = require('../utils/parse');
 const { HttpError } = require('../utils/errors');
 const SubjectModel = require('../models/subject.model');
 const { toSubject } = require('../views/subject.view');
 
 const subjectSchema = z.object({
-  code: z.string().min(1, 'Subject code is required'),
-  title: z.string().min(1, 'Subject title is required'),
-  instructor: z.string().nullish(),
+  code: z.string().trim().min(1, 'Subject code is required').max(20),
+  title: z.string().trim().min(1, 'Subject title is required').max(200),
+  instructor: z.string().trim().max(120).nullish(),
   units: z.number().int().min(0).max(20).optional(),
   color: z
     .string()
@@ -27,7 +27,8 @@ async function ownedSubject(id, userId) {
 
 const SubjectController = {
   getAll: async (req, res) => {
-    const rows = await SubjectModel.findAllByUserId(req.userId);
+    const { limit, offset } = parsePagination(req.query);
+    const rows = await SubjectModel.findAllByUserId(req.userId, { limit, offset });
     res.json({ data: rows.map(toSubject) });
   },
 
@@ -60,15 +61,16 @@ const SubjectController = {
       instructor: data.instructor !== undefined ? data.instructor : current.instructor,
       units: data.units ?? current.units,
       color: data.color ?? current.color,
-    });
+    }, req.userId);
 
+    if (!updated) throw new HttpError(404, 'Subject not found');
     res.json({ data: toSubject(updated) });
   },
 
   delete: async (req, res) => {
     const id = parseId(req.params.id);
-    await ownedSubject(id, req.userId);
-    await SubjectModel.delete(id);
+    const result = await SubjectModel.delete(id, req.userId);
+    if (!result.rowCount) throw new HttpError(404, 'Subject not found');
     res.status(204).end();
   },
 };

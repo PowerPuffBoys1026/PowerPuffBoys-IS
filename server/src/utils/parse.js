@@ -64,6 +64,18 @@ function parseOptionalEnum(value, name, allowed) {
   return value;
 }
 
+/** Parse optional `limit` / `offset` query values. */
+function parsePagination(query = {}, { maxLimit = 100 } = {}) {
+  return {
+    limit: parseOptionalInt(query.limit, { name: 'limit', min: 1, max: maxLimit }),
+    offset: parseOptionalInt(query.offset, {
+      name: 'offset',
+      min: 0,
+      max: Number.MAX_SAFE_INTEGER,
+    }),
+  };
+}
+
 module.exports = {
   parseId,
   parseOptionalInt,
@@ -71,4 +83,5 @@ module.exports = {
   parseOptionalBoolean,
   parseOptionalString,
   parseOptionalEnum,
+  parsePagination,
 };

@@ -1,14 +1,20 @@
 const db = require('../db');
 
 const SubjectModel = {
-  findAllByUserId: async (userId) => {
-    const result = await db.query('SELECT * FROM subjects WHERE user_id = $1 ORDER BY code', [userId]);
-    return result.rows;
-  },
+  findAllByUserId: async (userId, { limit, offset } = {}) => {
+    const params = [userId];
+    let sql = 'SELECT * FROM subjects WHERE user_id = $1 ORDER BY code';
+    if (limit !== undefined) {
+      sql += ` LIMIT $${params.length + 1}`;
+      params.push(limit);
+    }
+    if (offset !== undefined) {
+      sql += ` OFFSET $${params.length + 1}`;
+      params.push(offset);
+    }
 
-  findById: async (id) => {
-    const result = await db.query('SELECT * FROM subjects WHERE id = $1', [id]);
-    return result.rows[0] || null;
+    const result = await db.query(sql, params);
+    return result.rows;
   },
 
   findByIdAndUserId: async (id, userId) => {
@@ -24,25 +30,28 @@ const SubjectModel = {
     return result.rows[0];
   },
 
-  update: async (id, updates) => {
-    const current = await SubjectModel.findById(id);
-    if (!current) return null;
+  /** Update a subject owned by `userId`; returns the updated row or null. */
+  update: async (id, updates, userId) => {
     const result = await db.query(
-      'UPDATE subjects SET code = $1, title = $2, instructor = $3, units = $4, color = $5 WHERE id = $6 RETURNING *',
+      `UPDATE subjects
+          SET code = $1, title = $2, instructor = $3, units = $4, color = $5
+        WHERE id = $6 AND user_id = $7
+        RETURNING *`,
       [
-        updates.code ?? current.code,
-        updates.title ?? current.title,
-        updates.instructor !== undefined ? updates.instructor : current.instructor,
-        updates.units ?? current.units,
-        updates.color ?? current.color,
+        updates.code,
+        updates.title,
+        updates.instructor,
+        updates.units,
+        updates.color,
         id,
+        userId,
       ],
     );
     return result.rows[0] || null;
   },
 
-  delete: async (id) => {
-    return db.query('DELETE FROM subjects WHERE id = $1', [id]);
+  delete: (id, userId) => {
+    return db.query('DELETE FROM subjects WHERE id = $1 AND user_id = $2', [id, userId]);
   },
 };
 

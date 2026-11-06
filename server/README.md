@@ -80,6 +80,10 @@ Every route except `POST /auth/register` and `POST /auth/login` needs
 | PATCH | `/notes/:id/pin` | Toggle the pinned flag |
 | GET | `/dashboard/today` | Today's classes + due-soon + warnings |
 
+List endpoints (`/subjects`, `/schedule`, `/attendance`, `/works`, `/notes`) accept
+optional `?limit=1..100&offset=0` pagination. Every read and write is scoped to the
+authenticated user, so another user's resource IDs return `404` rather than leaking data.
+
 **Error shape:** `{ "error": { "message": "…", "details": [ { "path", "message" } ] } }`
 with status codes `400` validation, `401` auth, `404` not found, `409` conflict,
 `413` body too large, `429` too many auth attempts.

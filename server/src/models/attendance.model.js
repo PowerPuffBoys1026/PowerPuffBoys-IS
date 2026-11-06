@@ -39,10 +39,12 @@ const AttendanceModel = {
 
   create: async ({ subjectId, slotId, date, status, note }) => {
     const result = await db.query(
-      'INSERT INTO attendance_records (subject_id, slot_id, date, status, note) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+      `INSERT INTO attendance_records (subject_id, slot_id, date, status, note)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING *`,
       [subjectId, slotId ?? null, date, status, note ?? null],
     );
-    return result.rows[0].id;
+    return result.rows[0];
   },
 
   findByIdAndUserId: async (id, userId) => {
@@ -55,7 +57,7 @@ const AttendanceModel = {
     return result.rows[0] || null;
   },
 
-  findAllByUserId: async (userId, { subjectId, from, to } = {}) => {
+  findAllByUserId: async (userId, { subjectId, from, to, limit, offset } = {}) => {
     const params = [userId];
     let sql = `SELECT a.* FROM attendance_records a
                  JOIN subjects s ON s.id = a.subject_id
@@ -75,13 +77,28 @@ const AttendanceModel = {
     }
 
     sql += ' ORDER BY a.date DESC';
+
+    if (limit !== undefined) {
+      sql += ` LIMIT $${params.length + 1}`;
+      params.push(limit);
+    }
+    if (offset !== undefined) {
+      sql += ` OFFSET $${params.length + 1}`;
+      params.push(offset);
+    }
+
     const result = await db.query(sql, params);
     return result.rows;
   },
 
-  update: async (id, updates, current) => {
-    await db.query(
-      'UPDATE attendance_records SET subject_id = $1, slot_id = $2, date = $3, status = $4, note = $5 WHERE id = $6',
+  /** Update a record owned by `userId`; returns the updated row or null. */
+  update: async (id, updates, current, userId) => {
+    const result = await db.query(
+      `UPDATE attendance_records a
+          SET subject_id = $1, slot_id = $2, date = $3, status = $4, note = $5
+         FROM subjects s
+        WHERE a.id = $6 AND a.subject_id = s.id AND s.user_id = $7
+        RETURNING a.*`,
       [
         updates.subjectId ?? current.subject_id,
         updates.slotId !== undefined ? updates.slotId : current.slot_id,
@@ -89,12 +106,19 @@ const AttendanceModel = {
         updates.status ?? current.status,
         updates.note !== undefined ? updates.note : current.note,
         id,
+        userId,
       ],
     );
+    return result.rows[0] || null;
   },
 
-  delete: (id) => {
-    return db.query('DELETE FROM attendance_records WHERE id = $1', [id]);
+  delete: (id, userId) => {
+    return db.query(
+      `DELETE FROM attendance_records a
+        USING subjects s
+        WHERE a.id = $1 AND a.subject_id = s.id AND s.user_id = $2`,
+      [id, userId],
+    );
   },
 };
 

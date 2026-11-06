@@ -12,7 +12,7 @@ const WorkModel = {
     return result.rowCount > 0;
   },
 
-  findAllByUserId: async (userId, { status, subjectId, dueBefore } = {}) => {
+  findAllByUserId: async (userId, { status, subjectId, dueBefore, limit, offset } = {}) => {
     const params = [userId];
     let sql = `${SELECT_WORK} WHERE w.user_id = $1`;
 
@@ -30,16 +30,33 @@ const WorkModel = {
     }
 
     sql += " ORDER BY (w.status = 'done'), COALESCE(w.due_at, '9999-12-31'::timestamptz)";
+
+    if (limit !== undefined) {
+      sql += ` LIMIT $${params.length + 1}`;
+      params.push(limit);
+    }
+    if (offset !== undefined) {
+      sql += ` OFFSET $${params.length + 1}`;
+      params.push(offset);
+    }
+
     const result = await db.query(sql, params);
     return result.rows;
   },
 
   create: async ({ userId, subjectId, title, type, dueAt, priority, status, notes }) => {
     const result = await db.query(
-      'INSERT INTO school_works (user_id, subject_id, title, type, due_at, priority, status, notes) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id',
+      `WITH inserted AS (
+         INSERT INTO school_works (user_id, subject_id, title, type, due_at, priority, status, notes)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         RETURNING *
+       )
+       SELECT i.*, s.code AS subject_code, s.title AS subject_title, s.color
+         FROM inserted i
+         LEFT JOIN subjects s ON s.id = i.subject_id`,
       [userId, subjectId ?? null, title, type ?? 'assignment', dueAt ?? null, priority ?? 'medium', status ?? 'todo', notes ?? null],
     );
-    return result.rows[0].id;
+    return result.rows[0];
   },
 
   findByIdAndUserId: async (id, userId) => {
@@ -47,12 +64,19 @@ const WorkModel = {
     return result.rows[0] || null;
   },
 
-  update: async (id, updates, current) => {
-    await db.query(
-      `UPDATE school_works
-          SET subject_id = $1, title = $2, type = $3, due_at = $4, priority = $5, status = $6, notes = $7,
-              updated_at = NOW()
-        WHERE id = $8`,
+  /** Update a work owned by `userId`; returns the joined row or null. */
+  update: async (id, updates, current, userId) => {
+    const result = await db.query(
+      `WITH updated AS (
+         UPDATE school_works w
+            SET subject_id = $1, title = $2, type = $3, due_at = $4, priority = $5,
+                status = $6, notes = $7, updated_at = NOW()
+          WHERE w.id = $8 AND w.user_id = $9
+          RETURNING w.*
+       )
+       SELECT u.*, s.code AS subject_code, s.title AS subject_title, s.color
+         FROM updated u
+         LEFT JOIN subjects s ON s.id = u.subject_id`,
       [
         updates.subjectId !== undefined ? updates.subjectId : current.subject_id,
         updates.title ?? current.title,
@@ -62,16 +86,30 @@ const WorkModel = {
         updates.status ?? current.status,
         updates.notes !== undefined ? updates.notes : current.notes,
         id,
+        userId,
       ],
     );
+    return result.rows[0] || null;
   },
 
-  updateStatus: (id, status) => {
-    return db.query('UPDATE school_works SET status = $1, updated_at = NOW() WHERE id = $2', [status, id]);
+  updateStatus: async (id, status, userId) => {
+    const result = await db.query(
+      `WITH updated AS (
+         UPDATE school_works w
+            SET status = $1, updated_at = NOW()
+          WHERE w.id = $2 AND w.user_id = $3
+          RETURNING w.*
+       )
+       SELECT u.*, s.code AS subject_code, s.title AS subject_title, s.color
+         FROM updated u
+         LEFT JOIN subjects s ON s.id = u.subject_id`,
+      [status, id, userId],
+    );
+    return result.rows[0] || null;
   },
 
-  delete: (id) => {
-    return db.query('DELETE FROM school_works WHERE id = $1', [id]);
+  delete: (id, userId) => {
+    return db.query('DELETE FROM school_works WHERE id = $1 AND user_id = $2', [id, userId]);
   },
 };
 

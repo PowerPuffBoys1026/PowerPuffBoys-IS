@@ -1,7 +1,12 @@
 const { z } = require('zod');
 
+const {
+  parseId,
+  parseOptionalInt,
+  parseOptionalDate,
+  parsePagination,
+} = require('../utils/parse');
 const { validate } = require('../utils/validate');
-const { parseId, parseOptionalInt, parseOptionalDate } = require('../utils/parse');
 const { HttpError } = require('../utils/errors');
 const AttendanceModel = require('../models/attendance.model');
 const { attendanceSummary } = require('../services/attendance');
@@ -14,7 +19,7 @@ const attendanceSchema = z.object({
   slotId: z.number().int().positive().nullish(),
   date: z.string().regex(dateRegex, 'date must be YYYY-MM-DD'),
   status: z.enum(['present', 'absent', 'late', 'cancelled']),
-  note: z.string().nullish(),
+  note: z.string().max(500).nullish(),
 });
 
 const attendanceUpdateSchema = attendanceSchema.partial();
@@ -51,8 +56,15 @@ const AttendanceController = {
     });
     const from = parseOptionalDate(req.query.from, 'from');
     const to = parseOptionalDate(req.query.to, 'to');
+    const { limit, offset } = parsePagination(req.query);
 
-    const rows = await AttendanceModel.findAllByUserId(req.userId, { subjectId, from, to });
+    const rows = await AttendanceModel.findAllByUserId(req.userId, {
+      subjectId,
+      from,
+      to,
+      limit,
+      offset,
+    });
     res.json({ data: rows.map(toRecord) });
   },
 
@@ -66,7 +78,7 @@ const AttendanceController = {
       throw new HttpError(409, 'Attendance for this session is already recorded');
     }
 
-    const recordId = await AttendanceModel.create({
+    const record = await AttendanceModel.create({
       subjectId: data.subjectId,
       slotId: data.slotId ?? null,
       date: data.date,
@@ -74,7 +86,7 @@ const AttendanceController = {
       note: data.note ?? null,
     });
 
-    res.status(201).json({ data: toRecord(await ownedRecord(recordId, req.userId)) });
+    res.status(201).json({ data: toRecord(record) });
   },
 
   update: async (req, res) => {
@@ -94,14 +106,15 @@ const AttendanceController = {
       throw new HttpError(409, 'Attendance for this session is already recorded');
     }
 
-    await AttendanceModel.update(id, data, current);
-    res.json({ data: toRecord(await ownedRecord(id, req.userId)) });
+    const updated = await AttendanceModel.update(id, data, current, req.userId);
+    if (!updated) throw new HttpError(404, 'Attendance record not found');
+    res.json({ data: toRecord(updated) });
   },
 
   delete: async (req, res) => {
     const id = parseId(req.params.id);
-    await ownedRecord(id, req.userId);
-    await AttendanceModel.delete(id);
+    const result = await AttendanceModel.delete(id, req.userId);
+    if (!result.rowCount) throw new HttpError(404, 'Attendance record not found');
     res.status(204).end();
   },
 };

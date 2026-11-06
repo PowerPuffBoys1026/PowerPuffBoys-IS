@@ -114,6 +114,18 @@ async function main() {
     r = await req('GET', '/subjects', { token });
     check('list subjects', r.status === 200 && r.json.data.length === 1);
 
+    r = await req('GET', '/subjects?limit=0', { token });
+    check('invalid limit -> 400', r.status === 400);
+
+    r = await req('GET', '/subjects?offset=-1', { token });
+    check('invalid offset -> 400', r.status === 400);
+
+    r = await req('GET', '/subjects?limit=1', { token });
+    check('pagination limit applies', r.status === 200 && r.json.data.length === 1);
+
+    r = await req('GET', '/subjects?limit=1&offset=1', { token });
+    check('pagination offset applies', r.status === 200 && r.json.data.length === 0);
+
     r = await req('POST', '/schedule', {
       token,
       body: { subjectId, dayOfWeek: 1, startTime: '08:00', endTime: '09:30', room: 'Lab 2' },
@@ -222,6 +234,30 @@ async function main() {
     r = await req('GET', `/subjects/${subjectId}`, { token: token2 });
     check('another user cannot read the subject -> 404', r.status === 404);
 
+    r = await req('PUT', `/subjects/${subjectId}`, { token: token2, body: { title: 'Hijacked' } });
+    check('another user cannot update the subject -> 404', r.status === 404);
+
+    r = await req('DELETE', `/subjects/${subjectId}`, { token: token2 });
+    check('another user cannot delete the subject -> 404', r.status === 404);
+
+    r = await req('PUT', `/schedule/${slotId}`, { token: token2, body: { room: 'Hijacked' } });
+    check('another user cannot update the schedule slot -> 404', r.status === 404);
+
+    r = await req('DELETE', `/schedule/${slotId}`, { token: token2 });
+    check('another user cannot delete the schedule slot -> 404', r.status === 404);
+
+    r = await req('PUT', `/attendance/${attendanceId}`, { token: token2, body: { note: 'Hijacked' } });
+    check('another user cannot update the attendance -> 404', r.status === 404);
+
+    r = await req('DELETE', `/attendance/${attendanceId}`, { token: token2 });
+    check('another user cannot delete the attendance -> 404', r.status === 404);
+
+    r = await req('PUT', `/works/${workId}`, { token: token2, body: { title: 'Hijacked' } });
+    check('another user cannot update the work -> 404', r.status === 404);
+
+    r = await req('PATCH', `/works/${workId}/status`, { token: token2, body: { status: 'todo' } });
+    check('another user cannot patch the work -> 404', r.status === 404);
+
     r = await req('DELETE', `/works/${workId}`, { token });
     check('delete work -> 204', r.status === 204);
     r = await req('GET', '/works', { token });
@@ -242,6 +278,12 @@ async function main() {
 
     r = await req('PATCH', `/notes/${noteId}/pin`, { token });
     check('toggle note pin', r.status === 200 && !r.json.data.isPinned);
+
+    r = await req('PUT', `/notes/${noteId}`, { token: token2, body: { title: 'Hijacked' } });
+    check('another user cannot update the note -> 404', r.status === 404);
+
+    r = await req('PATCH', `/notes/${noteId}/pin`, { token: token2 });
+    check('another user cannot pin the note -> 404', r.status === 404);
 
     r = await req('DELETE', `/notes/${noteId}`, { token });
     check('delete note', r.status === 204);
