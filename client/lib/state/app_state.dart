@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../api/api.dart';
 import '../api/api_client.dart';
+import '../config.dart';
 import '../models/attendance.dart';
 import '../models/dashboard.dart';
 import '../models/schedule_slot.dart';
@@ -43,8 +44,8 @@ class AppState extends ChangeNotifier {
       dashboard = results[4] as DashboardData;
     } on ApiException catch (e) {
       error = e.message;
-    } catch (_) {
-      error = 'Could not reach the server. Is the API running?';
+    } catch (e) {
+      error = 'Could not reach the server (${e.runtimeType}: $e). API: ${AppConfig.apiBaseUrl}';
     } finally {
       loading = false;
       notifyListeners();

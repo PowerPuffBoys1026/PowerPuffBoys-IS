@@ -22,10 +22,10 @@ const SubjectModel = {
     return result.rows[0] || null;
   },
 
-  create: async ({ userId, code, title, instructor, units, color }) => {
+  create: async ({ userId, code, title, instructor, instructorEmail, officeHours, units, color }) => {
     const result = await db.query(
-      'INSERT INTO subjects (user_id, code, title, instructor, units, color) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-      [userId, code, title, instructor ?? null, units ?? 0, color ?? '#4F46E5'],
+      'INSERT INTO subjects (user_id, code, title, instructor, instructor_email, office_hours, units, color) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
+      [userId, code, title, instructor ?? null, instructorEmail ?? null, officeHours ?? null, units ?? 0, color ?? '#4F46E5'],
     );
     return result.rows[0];
   },
@@ -34,13 +34,15 @@ const SubjectModel = {
   update: async (id, updates, userId) => {
     const result = await db.query(
       `UPDATE subjects
-          SET code = $1, title = $2, instructor = $3, units = $4, color = $5
-        WHERE id = $6 AND user_id = $7
+          SET code = $1, title = $2, instructor = $3, instructor_email = $4, office_hours = $5, units = $6, color = $7
+        WHERE id = $8 AND user_id = $9
         RETURNING *`,
       [
         updates.code,
         updates.title,
         updates.instructor,
+        updates.instructorEmail,
+        updates.officeHours,
         updates.units,
         updates.color,
         id,

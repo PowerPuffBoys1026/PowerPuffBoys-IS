@@ -9,6 +9,7 @@ function publicUser(row) {
     fullName: row.full_name,
     studentNo: row.student_no,
     course: row.course,
+    yearLevel: row.year_level ?? null,
     createdAt: row.created_at,
   };
 }

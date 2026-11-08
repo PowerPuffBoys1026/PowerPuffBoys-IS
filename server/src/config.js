@@ -24,6 +24,8 @@ try {
   throw new Error(`APP_TIMEZONE is not a valid IANA time zone: ${appTimezone}`);
 }
 
+const path = require('node:path');
+
 const config = {
   port: Number(process.env.PORT) || 3000,
   jwtSecret,
@@ -48,6 +50,9 @@ const config = {
   pgConnectTimeoutMs: Number(process.env.PGCONNECT_TIMEOUT_MS) || 5000,
   pgStatementTimeoutMs: Number(process.env.PGSTATEMENT_TIMEOUT_MS) || 10000,
   attendanceThreshold: Number(process.env.ATTENDANCE_THRESHOLD) || 20,
+  uploadDir: process.env.UPLOAD_DIR
+    ? path.resolve(process.cwd(), process.env.UPLOAD_DIR)
+    : path.join(__dirname, '..', 'data', 'uploads'),
 };
 
 module.exports = config;

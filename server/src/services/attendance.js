@@ -35,6 +35,13 @@ async function attendanceSummary(userId) {
     const counted = present + absent + late;
     const attendanceRate = counted ? Math.round((present / counted) * 1000) / 10 : null;
     const absenceRate = counted ? Math.round((absent / counted) * 1000) / 10 : null;
+    // v2-compatible fields
+    const maxAllowedAbsences = Math.max(3, Math.floor((config.attendanceThreshold / 100) * 28));
+    const safeMissesLeft = Math.max(0, maxAllowedAbsences - absent);
+    let healthStatus = 'safe';
+    if (absenceRate !== null && (absenceRate >= config.attendanceThreshold || absent >= maxAllowedAbsences)) {
+      healthStatus = absent > maxAllowedAbsences ? 'critical' : 'warning';
+    }
 
     return {
       subjectId: row.id,
@@ -48,7 +55,9 @@ async function attendanceSummary(userId) {
       counted,
       attendanceRate,
       absenceRate,
-      warning: absenceRate !== null && absenceRate >= config.attendanceThreshold,
+      safeMissesLeft,
+      healthStatus,
+      warning: absenceRate !== null && (absenceRate >= config.attendanceThreshold || absent >= maxAllowedAbsences),
     };
   });
 }
