@@ -166,6 +166,37 @@ Expected:
 { "status": "ok", "service": "classmate-api" }
 ```
 
+### Access from another device (same Wi-Fi)
+
+The API also serves the v2 web app, and Node listens on all network interfaces.
+
+1. Allow the port through Windows Firewall once (elevated PowerShell):
+
+   ```powershell
+   New-NetFirewallRule -DisplayName "ClassMate API TCP 3000" `
+     -Direction Inbound -Protocol TCP -LocalPort 3000 `
+     -RemoteAddress LocalSubnet -Action Allow
+   ```
+
+2. Find this PC's IPv4 address:
+
+   ```powershell
+   (Get-NetIPAddress -AddressFamily IPv4 -InterfaceAlias "Wi-Fi*").IPAddress
+   ```
+
+3. On a phone or laptop connected to the same network, open
+   `http://<pc-ip>:3000`. The health check is at
+   `http://<pc-ip>:3000/api/health`.
+
+Notes:
+
+- `-RemoteAddress LocalSubnet` keeps the port private to the local network.
+- The devices must be on the same Wi-Fi; disconnect any VPN.
+- The address can change after reconnecting. Check it again or reserve a static
+  IP in the router.
+- For access outside the LAN, use a tunnel (Cloudflare Tunnel, ngrok) or router
+  port forwarding instead of exposing PostgreSQL.
+
 ---
 
 ## 4. Stop the app
