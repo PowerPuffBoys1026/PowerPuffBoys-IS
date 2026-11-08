@@ -340,18 +340,18 @@ function renderDashboard() {
   if (nextClass) {
     nextCard.innerHTML = `
       <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
-        <button type="button" class="dashboard-class-open next-class-open" onclick="openClassDetails(${nextClass.slotId})" aria-label="Open ${nextClass.code} class details">
+        <button type="button" class="dashboard-class-open next-class-open" onclick="openClassDetails(${nextClass.slotId})" aria-label="Open ${escapeHtml(nextClass.code)} class details">
           <span style="width: 52px; height: 52px; flex: 0 0 52px; border-radius: 14px; background: var(--primary-medium); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 24px;">
             🎓
           </span>
           <div>
             <div style="display: flex; align-items: center; gap: 8px;">
               <span class="hero-tag" style="background: var(--primary); color: #fff; margin-bottom: 0;">UPCOMING CLASS</span>
-              <span style="font-size: 13px; font-weight: 800; color: var(--primary);">${nextClass.code}</span>
+              <span style="font-size: 13px; font-weight: 800; color: var(--primary);">${escapeHtml(nextClass.code)}</span>
             </div>
-            <h3 style="font-size: 19px; font-weight: 800; margin-top: 4px;">${nextClass.title}</h3>
+            <h3 style="font-size: 19px; font-weight: 800; margin-top: 4px;">${escapeHtml(nextClass.title)}</h3>
             <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
-              ${formatClock(nextClass.startTime)} – ${formatClock(nextClass.endTime)} · ${nextClass.room || nextClass.modality || 'Campus'}
+              ${formatClock(nextClass.startTime)} – ${formatClock(nextClass.endTime)} · ${escapeHtml(nextClass.room || nextClass.modality || 'Campus')}
             </p>
           </div>
         </button>
@@ -377,9 +377,9 @@ function renderDashboard() {
   // Safe Skips Attendance Radar
   const radarStrip = document.getElementById('dash-radar-strip');
   radarStrip.innerHTML = attendanceSummary.map(s => `
-    <button type="button" class="radar-chip radar-chip-button ${s.warning ? 'warning' : 'safe'}" onclick="openAttendanceSubject(${s.subjectId})" aria-label="Open attendance for ${s.code}">
+    <button type="button" class="radar-chip radar-chip-button ${s.warning ? 'warning' : 'safe'}" onclick="openAttendanceSubject(${s.subjectId})" aria-label="Open attendance for ${escapeHtml(s.code)}">
       <div style="width: 8px; height: 8px; border-radius: 50%; background: ${s.color};"></div>
-      <span style="font-size: 12.5px; font-weight: 800;">${s.code}</span>
+      <span style="font-size: 12.5px; font-weight: 800;">${escapeHtml(s.code)}</span>
       <span style="font-size: 11px; font-weight: 700; color: ${s.warning ? 'var(--rose)' : 'var(--emerald)'};">
         ${s.warning ? '🚨 0 skips left' : `🛡️ ${s.safeMissesLeft} skips left`}
       </span>
@@ -402,11 +402,11 @@ function renderDashboard() {
   const classList = document.getElementById('dash-classes-list');
   classList.innerHTML = (dashboardData.classes || []).map(c => `
     <div class="card dashboard-class-row" style="padding: 14px 18px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
-      <button type="button" class="dashboard-class-open" onclick="openClassDetails(${c.slotId})" aria-label="Open ${c.code} class details">
+      <button type="button" class="dashboard-class-open" onclick="openClassDetails(${c.slotId})" aria-label="Open ${escapeHtml(c.code)} class details">
         <span style="width: 4px; height: 36px; flex: 0 0 4px; border-radius: 4px; background: ${c.color};"></span>
         <div>
-          <div style="font-size: 14px; font-weight: 800;">${c.code} · ${c.title}</div>
-          <div style="font-size: 11px; color: var(--text-muted);">${formatClock(c.startTime)} – ${formatClock(c.endTime)} · ${c.room || 'Classroom'}</div>
+          <div style="font-size: 14px; font-weight: 800;">${escapeHtml(c.code)} · ${escapeHtml(c.title)}</div>
+          <div style="font-size: 11px; color: var(--text-muted);">${formatClock(c.startTime)} – ${formatClock(c.endTime)} · ${escapeHtml(c.room || 'Classroom')}</div>
         </div>
       </button>
       <div style="display: flex; gap: 6px;">
@@ -421,8 +421,8 @@ function renderDashboard() {
   dueList.innerHTML = (dashboardData.dueSoon || []).map(w => `
     <div class="card" style="padding: 14px 18px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
       <div>
-        <div style="font-size: 14px; font-weight: 700;">${w.title}</div>
-        <div style="font-size: 11px; color: var(--text-muted);">${w.subjectCode || 'General'} · ${w.type.toUpperCase()}</div>
+        <div style="font-size: 14px; font-weight: 700;">${escapeHtml(w.title)}</div>
+        <div style="font-size: 11px; color: var(--text-muted);">${escapeHtml(w.subjectCode || 'General')} · ${w.type.toUpperCase()}</div>
       </div>
       <div class="badge" style="background: ${w.overdue ? 'var(--rose)' : 'var(--primary)'}; font-size: 10px;">
         ${w.overdue ? 'Overdue' : formatDue(w.dueAt)}
@@ -456,10 +456,10 @@ function renderSchedule() {
               <div style="font-size: 14px; font-weight: 800; margin-bottom: 12px; color: var(--primary);">${DAY_NAMES[d]}</div>
               ${daySlots.map(s => `
                 <div style="padding: 10px; border-radius: 10px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); margin-bottom: 8px;">
-                  <div style="font-size: 12px; font-weight: 800; color: ${s.color};">${s.subjectCode}</div>
-                  <div style="font-size: 11px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${s.subjectTitle}</div>
+                  <div style="font-size: 12px; font-weight: 800; color: ${s.color};">${escapeHtml(s.subjectCode)}</div>
+                  <div style="font-size: 11px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(s.subjectTitle)}</div>
                   <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">${formatClock(s.startTime)} - ${formatClock(s.endTime)}</div>
-                  <div style="font-size: 9px; color: var(--text-dim);">${s.room || s.modality || ''}</div>
+                  <div style="font-size: 9px; color: var(--text-dim);">${escapeHtml(s.room || s.modality || '')}</div>
                 </div>
               `).join('') || '<div style="font-size: 11px; color: var(--text-dim);">No classes</div>'}
             </div>
@@ -496,9 +496,9 @@ function renderSchedule() {
           <article class="schedule-day-class">
             <div class="schedule-day-time">${formatClock(slot.startTime)} – ${formatClock(slot.endTime)}</div>
             <div class="schedule-day-course" style="--course-color: ${slot.color};">
-              <strong>${slot.subjectCode}</strong>
-              <span>${slot.subjectTitle}</span>
-              <small>${slot.room || slot.modality || 'Location not set'}</small>
+              <strong>${escapeHtml(slot.subjectCode)}</strong>
+              <span>${escapeHtml(slot.subjectTitle)}</span>
+              <small>${escapeHtml(slot.room || slot.modality || 'Location not set')}</small>
             </div>
           </article>
         `).join('') || '<p class="schedule-day-empty">No classes scheduled for this day.</p>'}
@@ -630,7 +630,7 @@ function renderAttendance() {
         <div style="display: flex; align-items: center; gap: 12px;">
           <div style="width: 12px; height: 12px; border-radius: 50%; background: ${s.color};"></div>
           <div>
-            <div style="font-size: 16px; font-weight: 800;">${s.code} · ${s.title}</div>
+            <div style="font-size: 16px; font-weight: 800;">${escapeHtml(s.code)} · ${escapeHtml(s.title)}</div>
             <div style="font-size: 11.5px; color: var(--text-muted);">${s.counted} class sessions recorded</div>
           </div>
         </div>
@@ -744,7 +744,7 @@ function renderTasks() {
 
   const filtered = schoolWorks.filter(w => {
     if (currentTaskFilter !== 'all' && w.status !== currentTaskFilter) return false;
-    if (search && !w.title.toLowerCase().contains(search)) return false;
+    if (search && !w.title.toLowerCase().includes(search)) return false;
     return true;
   });
 
@@ -764,9 +764,9 @@ function renderTasks() {
           </div>
         </div>
         <div class="task-item-details" style="flex: 1;">
-          <div class="task-title" style="font-size: 14.5px; font-weight: 700;">${w.title}</div>
+          <div class="task-title" style="font-size: 14.5px; font-weight: 700;">${escapeHtml(w.title)}</div>
           <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
-            ${w.subjectCode || 'General'} · ${w.type.toUpperCase()} · ${w.priority === 'high' ? '🔥 Urgent' : w.priority}
+            ${escapeHtml(w.subjectCode || 'General')} · ${w.type.toUpperCase()} · ${w.priority === 'high' ? '🔥 Urgent' : w.priority}
           </div>
           ${renderAttachmentControls(attachments)}
         </div>
@@ -944,8 +944,8 @@ function renderFocus() {
   history.innerHTML = studySessions.slice(0, 5).map(s => `
     <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border-color);">
       <div>
-        <div style="font-size: 13px; font-weight: 700;">${s.subjectCode || 'Deep Focus Session'}</div>
-        <div style="font-size: 11px; color: var(--text-muted);">${s.notes || 'Focus work logged'}</div>
+        <div style="font-size: 13px; font-weight: 700;">${escapeHtml(s.subjectCode || 'Deep Focus Session')}</div>
+        <div style="font-size: 11px; color: var(--text-muted);">${escapeHtml(s.notes || 'Focus work logged')}</div>
       </div>
       <span class="badge" style="background: var(--primary-medium); color: var(--primary);">${s.durationMinutes}m</span>
     </div>
@@ -1060,11 +1060,11 @@ function renderGrades() {
       <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
         <div style="display: flex; align-items: center; gap: 12px;">
           <div style="width: 38px; height: 38px; border-radius: 10px; background: ${s.color}; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800;">
-            ${s.code[0] || 'C'}
+            ${escapeHtml(s.code[0] || 'C')}
           </div>
           <div>
-            <div style="font-size: 16px; font-weight: 800;">${s.code} · ${s.title}</div>
-            <div style="font-size: 12px; color: var(--text-muted);">${s.instructor || 'Prof'} · ${s.units || 3} Units</div>
+            <div style="font-size: 16px; font-weight: 800;">${escapeHtml(s.code)} · ${escapeHtml(s.title)}</div>
+            <div style="font-size: 12px; color: var(--text-muted);">${escapeHtml(s.instructor || 'Prof')} · ${s.units || 3} Units</div>
           </div>
         </div>
         <div style="display: flex; gap: 8px;">
@@ -1402,14 +1402,14 @@ function populateSelects() {
   const slotSub = document.getElementById('slot-input-subject');
 
   const options = `<option value="">General (No Course)</option>` +
-    subjects.map(s => `<option value="${s.id}">${s.code} · ${s.title}</option>`).join('');
+    subjects.map(s => `<option value="${s.id}">${escapeHtml(s.code)} · ${escapeHtml(s.title)}</option>`).join('');
 
   if (taskSub) taskSub.innerHTML = options;
   if (noteSub) noteSub.innerHTML = options;
   if (timerSub) timerSub.innerHTML = options;
   if (slotSub) {
     slotSub.innerHTML = '<option value="">Select a course</option>' +
-      subjects.map(subject => `<option value="${subject.id}">${subject.code} · ${subject.title}</option>`).join('');
+      subjects.map(subject => `<option value="${subject.id}">${escapeHtml(subject.code)} · ${escapeHtml(subject.title)}</option>`).join('');
   }
 }
 
