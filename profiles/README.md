@@ -50,5 +50,4 @@ Open a Pull Request to `main`, fill in the template, and ask a teammate to revie
 | NickBayer1026 | [nickbayer1026.md](nickbayer1026.md) |
 | Uttoh18 | [Uttoh18.md](Uttoh18.md) |
 | RaymartCalasang | [RaymartCalasang.md](RaymartCalasang.md) |
-| eulosbustamante | [eulosbustamante.md](eulosbustamante.md) |
 | clarkcadiente24-rgb | [clarkcadiente24-rgb.md](clarkcadiente24-rgb.md) |
