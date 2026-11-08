@@ -79,7 +79,7 @@ The **backend is scaffolded and verified working.** Current state:
 - ✅ PostgreSQL schema for the app tables, created automatically on first run.
 - ✅ JWT authentication with hashed passwords; every row is scoped to its owner.
 - ✅ Input validation (zod) and a consistent JSON error shape.
-- ✅ Demo seed data and an end-to-end smoke test — **35/35 checks passing**.
+- ✅ Demo seed data and an end-to-end smoke test — **64/64 checks passing**.
 - ✅ **Flutter client scaffolded** (`client/`) for Android, iOS, Web, Windows, macOS:
   auth, dashboard, schedule, attendance, works, and subjects screens, wired to the API.
   `flutter analyze` is clean, unit tests pass, and the web build succeeds.
