@@ -75,12 +75,12 @@ router.get('/stats', asyncHandler(async (req, res) => {
   const userId = req.userId;
   const totalToday = await db.query(
     `SELECT COALESCE(SUM(duration_minutes), 0)::int AS minutes FROM study_sessions
-      WHERE user_id = $1 AND completed_at::date = (NOW() AT TIME ZONE $2)::date`,
+      WHERE user_id = $1 AND (completed_at AT TIME ZONE $2)::date = (NOW() AT TIME ZONE $2)::date`,
     [userId, require('../config').appTimezone],
   );
   const totalThisWeek = await db.query(
     `SELECT COALESCE(SUM(duration_minutes), 0)::int AS minutes, COUNT(*)::int AS sessions
-       FROM study_sessions WHERE user_id = $1 AND completed_at::date >= ((NOW() AT TIME ZONE $2)::date - INTERVAL '6 days')`,
+       FROM study_sessions WHERE user_id = $1 AND (completed_at AT TIME ZONE $2)::date >= ((NOW() AT TIME ZONE $2)::date - INTERVAL '6 days')`,
     [userId, require('../config').appTimezone],
   );
   const allTime = await db.query(
