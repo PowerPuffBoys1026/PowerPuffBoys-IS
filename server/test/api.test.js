@@ -274,7 +274,22 @@ test('school works support updates, status changes, and filters', async () => {
   assert.equal(done.body.data.length, 1);
 
   const deleted = await req('DELETE', `/works/${workId}`, { token });
-  assert.equal(deleted.status, 204);
+  assert.equal(deleted.status, 200);
+  assert.ok(deleted.body.data.recycleBinId);
+
+  const hidden = await req('GET', `/works/${workId}`, { token });
+  assert.equal(hidden.status, 404);
+
+  const bin = await req('GET', '/recycle-bin', { token });
+  assert.equal(bin.status, 200);
+  assert.ok(bin.body.data.some((item) => item.id === deleted.body.data.recycleBinId && item.type === 'task'));
+
+  const restored = await req('POST', `/recycle-bin/${deleted.body.data.recycleBinId}/restore`, { token });
+  assert.equal(restored.status, 200);
+
+  const visibleAgain = await req('GET', `/works/${workId}`, { token });
+  assert.equal(visibleAgain.status, 200);
+  assert.equal(visibleAgain.body.data.title, 'Lab assignment');
 });
 
 test('attendance rejects duplicate sessions and produces a summary', async () => {
