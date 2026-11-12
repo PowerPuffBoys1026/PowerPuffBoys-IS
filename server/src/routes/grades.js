@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const { z } = require('zod');
 const db = require('../db');
 const { requireAuth } = require('../middleware/auth');
@@ -49,75 +49,51 @@ function percentageToGpa(pct) {
 }
 
 router.get('/', asyncHandler(async (req, res) => {
-  const rows = await db.query(
-    `SELECT g.id, g.subject_id, g.component_name, g.weight_pct, g.score_pct, g.target_pct, g.created_at,
-            s.code AS subject_code, s.title AS subject_title
-       FROM subject_grades g
-       JOIN subjects s ON s.id = g.subject_id
-      WHERE g.user_id = $1
-      ORDER BY s.code, g.component_name`,
-    [req.userId],
-  );
+  const rows = await db.query('SELECT * FROM fn_grades_list($1)', [req.userId]);
   res.json({ data: rows.rows.map(toGrade) });
 }));
 
 router.post('/', asyncHandler(async (req, res) => {
   const data = validate(gradeSchema, req.body);
-  const subject = await db.query('SELECT id FROM subjects WHERE id = $1 AND user_id = $2', [data.subjectId, req.userId]);
-  if (!subject.rows[0]) throw new HttpError(404, 'Subject not found');
-  const ins = await db.query(
-    `INSERT INTO subject_grades (user_id, subject_id, component_name, weight_pct, score_pct, target_pct)
-     VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`,
-    [req.userId, data.subjectId, data.componentName, data.weightPct, data.scorePct ?? null, data.targetPct ?? 85],
-  );
-  const row = await db.query(
-    `SELECT g.id, g.subject_id, g.component_name, g.weight_pct, g.score_pct, g.target_pct, g.created_at,
-            s.code AS subject_code, s.title AS subject_title
-       FROM subject_grades g JOIN subjects s ON s.id = g.subject_id WHERE g.id = $1`,
-    [ins.rows[0].id],
-  );
+  const subject = await db.query('SELECT fn_subject_owned($1,$2) AS exists', [data.subjectId, req.userId]);
+  if (!subject.rows[0]?.exists) throw new HttpError(404, 'Subject not found');
+  const row = await db.query('SELECT * FROM fn_grade_create($1,$2,$3,$4,$5,$6)', [
+    req.userId, data.subjectId, data.componentName, data.weightPct, data.scorePct ?? null, data.targetPct ?? 85,
+  ]);
   res.status(201).json({ data: toGrade(row.rows[0]) });
 }));
 
 router.put('/:id', asyncHandler(async (req, res) => {
   const id = parseId(req.params.id);
-  const current = await db.query(
-    'SELECT id, subject_id, component_name, weight_pct, score_pct, target_pct FROM subject_grades WHERE id = $1 AND user_id = $2',
-    [id, req.userId],
-  );
+  const current = await db.query('SELECT * FROM fn_grade_owned($1,$2)', [id, req.userId]);
   if (!current.rows[0]) throw new HttpError(404, 'Grade item not found');
   const cur = current.rows[0];
   const data = validate(gradeUpdateSchema, req.body);
-  await db.query(
-    `UPDATE subject_grades SET component_name=$1, weight_pct=$2, score_pct=$3, target_pct=$4 WHERE id=$5 AND user_id=$6`,
-    [
-      data.componentName ?? cur.component_name,
-      data.weightPct ?? cur.weight_pct,
-      data.scorePct !== undefined ? data.scorePct : cur.score_pct,
-      data.targetPct ?? cur.target_pct,
-      id, req.userId,
-    ],
-  );
-  const updated = await db.query(
-    `SELECT g.id, g.subject_id, g.component_name, g.weight_pct, g.score_pct, g.target_pct, g.created_at,
-            s.code AS subject_code, s.title AS subject_title
-       FROM subject_grades g JOIN subjects s ON s.id = g.subject_id WHERE g.id = $1`,
-    [id],
-  );
+  const setScore = Object.prototype.hasOwnProperty.call(data, 'scorePct');
+  const updated = await db.query('SELECT * FROM fn_grade_update($1,$2,$3,$4,$5,$6,$7)', [
+    id, req.userId,
+    data.componentName ?? cur.component_name,
+    data.weightPct ?? cur.weight_pct,
+    setScore ? (data.scorePct ?? null) : null,
+    setScore,
+    data.targetPct ?? cur.target_pct,
+  ]);
   res.json({ data: toGrade(updated.rows[0]) });
 }));
 
 router.delete('/:id', asyncHandler(async (req, res) => {
   const id = parseId(req.params.id);
-  const current = await db.query('SELECT id FROM subject_grades WHERE id = $1 AND user_id = $2', [id, req.userId]);
+  const current = await db.query('SELECT * FROM fn_grade_owned($1,$2)', [id, req.userId]);
   if (!current.rows[0]) throw new HttpError(404, 'Grade item not found');
   const recycleBinId = await recycleBin.trashRecord(req.userId, 'grade', id);
   res.json({ data: { success: true, recycleBinId } });
 }));
 
 router.get('/summary', asyncHandler(async (req, res) => {
-  const subjectsRes = await db.query('SELECT id, code, title, units, color FROM subjects WHERE user_id = $1 ORDER BY code', [req.userId]);
-  const gradesRes = await db.query('SELECT * FROM subject_grades WHERE user_id = $1', [req.userId]);
+  const [subjectsRes, gradesRes] = await Promise.all([
+    db.query('SELECT * FROM fn_grade_summary_subjects($1)', [req.userId]),
+    db.query('SELECT * FROM fn_grade_summary_grades($1)', [req.userId]),
+  ]);
   const allGrades = gradesRes.rows;
   let totalWeightedGpa = 0;
   let totalUnitsCounted = 0;

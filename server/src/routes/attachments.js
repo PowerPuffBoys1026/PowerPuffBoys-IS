@@ -20,13 +20,10 @@ async function ownedResource(req, res, next) {
     const config = RESOURCE_TYPES[req.params.resourceType];
     const id = parseId(req.params.resourceId, 'resourceId');
     if (!config) return next(new HttpError(404, 'Attachment collection not found'));
-    const resource = await db.query(`SELECT id FROM ${config.table} WHERE id = $1 AND user_id = $2`, [id, req.userId]);
-    if (!resource.rows[0]) return next(new HttpError(404, 'Task or note not found'));
-    const count = await db.query(
-      'SELECT COUNT(*)::int AS count FROM attachments WHERE user_id = $1 AND resource_type = $2 AND resource_id = $3',
-      [req.userId, config.type, id],
-    );
-    if (req.method === 'POST' && count.rows[0].count >= 10) return next(new HttpError(409, 'A record can have up to 10 attachments.'));
+    const resource = await db.query('SELECT fn_attachment_resource_owned($1,$2,$3) AS exists', [config.type, id, req.userId]);
+    if (!resource.rows[0]?.exists) return next(new HttpError(404, 'Task or note not found'));
+    const count = await db.query('SELECT fn_attachment_count($1,$2,$3) AS count', [req.userId, config.type, id]);
+    if (req.method === 'POST' && (count.rows[0]?.count ?? 0) >= 10) return next(new HttpError(409, 'A record can have up to 10 attachments.'));
     req.attachmentResource = { ...config, id };
     return next();
   } catch (e) { return next(e); }

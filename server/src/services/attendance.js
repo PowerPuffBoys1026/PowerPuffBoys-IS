@@ -8,23 +8,7 @@ const config = require('../config');
  * configured threshold.
  */
 async function attendanceSummary(userId) {
-  const result = await db.query(
-    `SELECT s.id,
-            s.code,
-            s.title,
-            s.color,
-            SUM(CASE WHEN a.status = 'present'   THEN 1 ELSE 0 END)::int AS present,
-            SUM(CASE WHEN a.status = 'absent'    THEN 1 ELSE 0 END)::int AS absent,
-            SUM(CASE WHEN a.status = 'late'      THEN 1 ELSE 0 END)::int AS late,
-            SUM(CASE WHEN a.status = 'cancelled' THEN 1 ELSE 0 END)::int AS cancelled
-       FROM subjects s
-       LEFT JOIN attendance_records a ON a.subject_id = s.id
-      WHERE s.user_id = $1
-      GROUP BY s.id, s.code, s.title, s.color
-      ORDER BY s.code`,
-    [userId],
-  );
-
+  const result = await db.query('SELECT * FROM fn_attendance_summary($1)', [userId]);
   const rows = result.rows;
 
   return rows.map((row) => {
@@ -35,7 +19,6 @@ async function attendanceSummary(userId) {
     const counted = present + absent + late;
     const attendanceRate = counted ? Math.round((present / counted) * 1000) / 10 : null;
     const absenceRate = counted ? Math.round((absent / counted) * 1000) / 10 : null;
-    // v2-compatible fields
     const maxAllowedAbsences = Math.max(3, Math.floor((config.attendanceThreshold / 100) * 28));
     const safeMissesLeft = Math.max(0, maxAllowedAbsences - absent);
     let healthStatus = 'safe';

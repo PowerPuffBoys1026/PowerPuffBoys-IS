@@ -2,42 +2,29 @@ const db = require('../db');
 
 const SubjectModel = {
   findAllByUserId: async (userId, { limit, offset } = {}) => {
-    const params = [userId];
-    let sql = 'SELECT * FROM subjects WHERE user_id = $1 ORDER BY code';
-    if (limit !== undefined) {
-      sql += ` LIMIT $${params.length + 1}`;
-      params.push(limit);
-    }
-    if (offset !== undefined) {
-      sql += ` OFFSET $${params.length + 1}`;
-      params.push(offset);
-    }
-
-    const result = await db.query(sql, params);
+    const result = await db.query('SELECT * FROM fn_subjects_list($1, $2, $3)', [userId, limit ?? null, offset ?? null]);
     return result.rows;
   },
 
   findByIdAndUserId: async (id, userId) => {
-    const result = await db.query('SELECT * FROM subjects WHERE id = $1 AND user_id = $2', [id, userId]);
+    const result = await db.query('SELECT * FROM fn_subject_get($1, $2)', [id, userId]);
     return result.rows[0] || null;
   },
 
   create: async ({ userId, code, title, instructor, instructorEmail, officeHours, units, color }) => {
     const result = await db.query(
-      'INSERT INTO subjects (user_id, code, title, instructor, instructor_email, office_hours, units, color) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
+      'SELECT * FROM fn_subject_create($1, $2, $3, $4, $5, $6, $7, $8)',
       [userId, code, title, instructor ?? null, instructorEmail ?? null, officeHours ?? null, units ?? 0, color ?? '#4F46E5'],
     );
     return result.rows[0];
   },
 
-  /** Update a subject owned by `userId`; returns the updated row or null. */
   update: async (id, updates, userId) => {
     const result = await db.query(
-      `UPDATE subjects
-          SET code = $1, title = $2, instructor = $3, instructor_email = $4, office_hours = $5, units = $6, color = $7
-        WHERE id = $8 AND user_id = $9
-        RETURNING *`,
+      'SELECT * FROM fn_subject_update($1, $2, $3, $4, $5, $6, $7, $8, $9)',
       [
+        id,
+        userId,
         updates.code,
         updates.title,
         updates.instructor,
@@ -45,16 +32,12 @@ const SubjectModel = {
         updates.officeHours,
         updates.units,
         updates.color,
-        id,
-        userId,
       ],
     );
     return result.rows[0] || null;
   },
 
-  delete: (id, userId) => {
-    return db.query('DELETE FROM subjects WHERE id = $1 AND user_id = $2', [id, userId]);
-  },
+  delete: (id, userId) => db.query('SELECT fn_subject_delete($1, $2) AS count', [id, userId]),
 };
 
 module.exports = SubjectModel;

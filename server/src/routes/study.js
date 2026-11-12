@@ -1,12 +1,14 @@
-const express = require('express');
+﻿const express = require('express');
 const { z } = require('zod');
 const db = require('../db');
+const config = require('../config');
 const { requireAuth } = require('../middleware/auth');
 const { validate } = require('../utils/validate');
 const { asyncHandler } = require('../utils/asyncHandler');
 const { HttpError } = require('../utils/errors');
 const recycleBin = require('../services/recycle_bin');
 const { parseId } = require('../utils/parse');
+const { dateInTimeZone } = require('../utils/dates');
 
 const router = express.Router();
 router.use(requireAuth);
@@ -38,78 +40,43 @@ function toSession(row) {
 }
 
 router.get('/sessions', asyncHandler(async (req, res) => {
-  const rows = await db.query(
-    `SELECT st.id, st.subject_id, st.duration_minutes, st.mode, st.notes, st.completed_at,
-            s.code AS subject_code, s.color AS subject_color
-       FROM study_sessions st
-  LEFT JOIN subjects s ON s.id = st.subject_id
-      WHERE st.user_id = $1
-      ORDER BY st.completed_at DESC
-      LIMIT 50`,
-    [req.userId],
-  );
+  const rows = await db.query('SELECT * FROM fn_study_sessions_list($1)', [req.userId]);
   res.json({ data: rows.rows.map(toSession) });
 }));
 
 router.post('/sessions', asyncHandler(async (req, res) => {
   const data = validate(sessionSchema, req.body);
   if (data.subjectId != null) {
-    const s = await db.query('SELECT id FROM subjects WHERE id = $1 AND user_id = $2', [data.subjectId, req.userId]);
-    if (!s.rows[0]) throw new HttpError(404, 'Subject not found');
+    const s = await db.query('SELECT fn_subject_owned($1,$2) AS exists', [data.subjectId, req.userId]);
+    if (!s.rows[0]?.exists) throw new HttpError(404, 'Subject not found');
   }
-  const ins = await db.query(
-    `INSERT INTO study_sessions (user_id, subject_id, duration_minutes, mode, notes)
-     VALUES ($1,$2,$3,$4,$5) RETURNING id`,
-    [req.userId, data.subjectId ?? null, data.durationMinutes, normalizeMode(data.mode), data.notes ?? null],
-  );
-  const row = await db.query(
-    `SELECT st.id, st.subject_id, st.duration_minutes, st.mode, st.notes, st.completed_at,
-            s.code AS subject_code, s.color AS subject_color
-       FROM study_sessions st LEFT JOIN subjects s ON s.id = st.subject_id WHERE st.id = $1`,
-    [ins.rows[0].id],
-  );
+  const row = await db.query('SELECT * FROM fn_study_session_create($1,$2,$3,$4,$5)', [
+    req.userId, data.subjectId ?? null, data.durationMinutes, normalizeMode(data.mode), data.notes ?? null,
+  ]);
   res.status(201).json({ data: toSession(row.rows[0]) });
 }));
 
 router.get('/stats', asyncHandler(async (req, res) => {
   const userId = req.userId;
-  const totalToday = await db.query(
-    `SELECT COALESCE(SUM(duration_minutes), 0)::int AS minutes FROM study_sessions
-      WHERE user_id = $1 AND completed_at::date = (NOW() AT TIME ZONE $2)::date`,
-    [userId, require('../config').appTimezone],
-  );
-  const totalThisWeek = await db.query(
-    `SELECT COALESCE(SUM(duration_minutes), 0)::int AS minutes, COUNT(*)::int AS sessions
-       FROM study_sessions WHERE user_id = $1 AND completed_at::date >= ((NOW() AT TIME ZONE $2)::date - INTERVAL '6 days')`,
-    [userId, require('../config').appTimezone],
-  );
-  const allTime = await db.query(
-    `SELECT COUNT(*)::int AS sessions, COALESCE(SUM(duration_minutes), 0)::int AS minutes FROM study_sessions WHERE user_id = $1`,
-    [userId],
-  );
-  const bySubject = await db.query(
-    `SELECT s.id AS subject_id, s.code, s.color, COALESCE(SUM(st.duration_minutes), 0)::int AS minutes
-       FROM study_sessions st JOIN subjects s ON s.id = st.subject_id
-      WHERE st.user_id = $1 GROUP BY s.id, s.code, s.color ORDER BY minutes DESC`,
-    [userId],
-  );
-  const activeDays = await db.query(
-    `SELECT DISTINCT (completed_at AT TIME ZONE $2)::date AS day FROM study_sessions WHERE user_id = $1
-     ORDER BY day DESC LIMIT 60`,
-    [userId, require('../config').appTimezone],
-  );
+  const tz = config.appTimezone;
+  const [totalToday, week, allTime, bySubject, activeDays] = await Promise.all([
+    db.query('SELECT fn_study_stats_today($1,$2) AS minutes', [userId, tz]),
+    db.query('SELECT * FROM fn_study_stats_week($1,$2)', [userId, tz]),
+    db.query('SELECT * FROM fn_study_stats_all($1)', [userId]),
+    db.query('SELECT * FROM fn_study_stats_by_subject($1)', [userId]),
+    db.query('SELECT day FROM fn_study_active_days($1,$2)', [userId, tz]),
+  ]);
+
+  const days = activeDays.rows.map((r) => String(r.day).slice(0, 10));
   let streakDays = 0;
-  const days = activeDays.rows.map(r => (r.day instanceof Date ? r.day.toISOString().slice(0,10) : String(r.day).slice(0,10)));
   if (days.length > 0) {
-    const tz = require('../config').appTimezone;
-    const todayRes = await db.query(`SELECT (NOW() AT TIME ZONE $1)::date::text AS today`, [tz]);
-    const today = todayRes.rows[0].today;
-    const yRes = await db.query(`SELECT ((NOW() AT TIME ZONE $1)::date - INTERVAL '1 day')::date::text AS y`, [tz]);
-    const yesterday = yRes.rows[0].y;
+    const today = dateInTimeZone(new Date(), tz);
+    const yDate = new Date(); yDate.setDate(yDate.getDate() - 1);
+    const yesterday = dateInTimeZone(yDate, tz);
     let check = days.includes(today) ? today : (days.includes(yesterday) ? yesterday : null);
     if (check) {
       let cur = new Date(check + 'T00:00:00Z');
-      while (days.includes(cur.toISOString().slice(0,10))) {
+      while (days.includes(cur.toISOString().slice(0, 10))) {
         streakDays++;
         cur.setUTCDate(cur.getUTCDate() - 1);
       }
@@ -119,10 +86,10 @@ router.get('/stats', asyncHandler(async (req, res) => {
   res.json({
     data: {
       totalMinutesToday: totalToday.rows[0].minutes,
-      totalMinutesThisWeek: totalThisWeek.rows[0].minutes,
-      sessionsThisWeek: totalThisWeek.rows[0].sessions,
-      totalSessionsAllTime: allTime.rows[0].sessions,
-      allTimeMinutes: allTime.rows[0].minutes,
+      totalMinutesThisWeek: week.rows[0]?.minutes ?? 0,
+      sessionsThisWeek: week.rows[0]?.sessions ?? 0,
+      totalSessionsAllTime: allTime.rows[0]?.sessions ?? 0,
+      allTimeMinutes: allTime.rows[0]?.minutes ?? 0,
       streakDays,
       bySubject: bySubject.rows.map((r) => ({ subjectId: r.subject_id, code: r.code, color: r.color, minutes: r.minutes })),
     },
@@ -131,8 +98,8 @@ router.get('/stats', asyncHandler(async (req, res) => {
 
 router.delete('/sessions/:id', asyncHandler(async (req, res) => {
   const id = parseId(req.params.id);
-  const cur = await db.query('SELECT id FROM study_sessions WHERE id = $1 AND user_id = $2', [id, req.userId]);
-  if (!cur.rows[0]) throw new HttpError(404, 'Session not found');
+  const cur = await db.query('SELECT fn_study_session_owned($1,$2) AS exists', [id, req.userId]);
+  if (!cur.rows[0]?.exists) throw new HttpError(404, 'Session not found');
   const recycleBinId = await recycleBin.trashRecord(req.userId, 'session', id);
   res.json({ data: { success: true, recycleBinId } });
 }));

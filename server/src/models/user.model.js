@@ -2,18 +2,18 @@ const db = require('../db');
 
 const UserModel = {
   findByEmail: async (email) => {
-    const result = await db.query('SELECT * FROM users WHERE email = $1', [email]);
+    const result = await db.query('SELECT * FROM fn_user_find_by_email($1)', [email]);
     return result.rows[0] || null;
   },
 
   findById: async (id) => {
-    const result = await db.query('SELECT * FROM users WHERE id = $1', [id]);
+    const result = await db.query('SELECT * FROM fn_user_find_by_id($1)', [id]);
     return result.rows[0] || null;
   },
 
   create: async ({ email, passwordHash, fullName, studentNo, course, yearLevel }) => {
     const result = await db.query(
-      'INSERT INTO users (email, password_hash, full_name, student_no, course, year_level) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+      'SELECT * FROM fn_user_create($1, $2, $3, $4, $5, $6)',
       [email, passwordHash, fullName, studentNo ?? null, course ?? null, yearLevel ?? null],
     );
     return result.rows[0];
@@ -21,19 +21,19 @@ const UserModel = {
 
   updateProfile: async (id, { fullName, studentNo, course, yearLevel }) => {
     const result = await db.query(
-      'UPDATE users SET full_name = $1, student_no = $2, course = $3, year_level = $4 WHERE id = $5 RETURNING *',
-      [fullName, studentNo ?? null, course ?? null, yearLevel ?? null, id],
+      'SELECT * FROM fn_user_update_profile($1, $2, $3, $4, $5)',
+      [id, fullName, studentNo ?? null, course ?? null, yearLevel ?? null],
     );
     return result.rows[0] || null;
   },
 
   updatePasswordHash: async (id, passwordHash) => {
-    await db.query('UPDATE users SET password_hash = $1 WHERE id = $2', [passwordHash, id]);
+    await db.query('SELECT fn_user_update_password($1, $2)', [id, passwordHash]);
   },
 
   existsByEmail: async (email) => {
-    const result = await db.query('SELECT id FROM users WHERE email = $1', [email]);
-    return result.rows.length > 0;
+    const result = await db.query('SELECT fn_user_exists_by_email($1) AS exists', [email]);
+    return Boolean(result.rows[0]?.exists);
   },
 };
 

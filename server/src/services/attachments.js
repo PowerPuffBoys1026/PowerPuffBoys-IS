@@ -67,51 +67,32 @@ function safeOriginalName(name) {
 
 async function addAttachment(userId, resourceType, resourceId, file) {
   if (!file) throw new HttpError(400, 'Choose a file to upload.');
-  const result = await db.query(
-    `INSERT INTO attachments (user_id, resource_type, resource_id, original_name, stored_name, mime_type, size_bytes)
-     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-    [
-      userId,
-      resourceType,
-      resourceId,
-      safeOriginalName(file.originalname),
-      path.basename(file.filename),
-      file.validatedMimeType,
-      file.size,
-    ],
-  );
+  const result = await db.query('SELECT * FROM fn_attachment_add($1,$2,$3,$4,$5,$6,$7)', [
+    userId,
+    resourceType,
+    resourceId,
+    safeOriginalName(file.originalname),
+    path.basename(file.filename),
+    file.validatedMimeType,
+    file.size,
+  ]);
   return metadata(result.rows[0]);
 }
 
 async function listResource(userId, resourceType, resourceId) {
-  const result = await db.query(
-    `SELECT * FROM attachments
-      WHERE user_id = $1 AND resource_type = $2 AND resource_id = $3
-      ORDER BY created_at, id`,
-    [userId, resourceType, resourceId],
-  );
+  const result = await db.query('SELECT * FROM fn_attachment_list_resource($1,$2,$3)', [userId, resourceType, resourceId]);
   return result.rows.map(metadata);
 }
 
 async function listAll(userId, resourceType) {
-  const table = resourceType === 'work' ? 'school_works' : 'notes';
-  const result = await db.query(
-    `SELECT attachment.* FROM attachments attachment
-       JOIN ${table} resource ON resource.id = attachment.resource_id AND resource.user_id = attachment.user_id
-      WHERE attachment.user_id = $1 AND attachment.resource_type = $2
-      ORDER BY attachment.created_at, attachment.id`,
-    [userId, resourceType],
-  );
+  const result = await db.query('SELECT * FROM fn_attachment_list_all($1,$2)', [userId, resourceType]);
   return result.rows.map(metadata);
 }
 
 async function getOwnedAttachment(userId, id) {
-  const result = await db.query('SELECT * FROM attachments WHERE id = $1 AND user_id = $2', [id, userId]);
+  const result = await db.query('SELECT * FROM fn_attachment_get_owned($1,$2)', [userId, id]);
   const row = result.rows[0];
   if (!row) throw new HttpError(404, 'Attachment not found');
-  const table = row.resource_type === 'work' ? 'school_works' : 'notes';
-  const resCheck = await db.query(`SELECT id FROM ${table} WHERE id = $1 AND user_id = $2`, [row.resource_id, userId]);
-  if (!resCheck.rows[0]) throw new HttpError(404, 'Attachment not found');
   return row;
 }
 
@@ -131,19 +112,12 @@ function removeFile(row) {
 
 async function deleteAttachment(userId, id) {
   const row = await getOwnedAttachment(userId, id);
-  await db.query('DELETE FROM attachments WHERE id = $1 AND user_id = $2', [id, userId]);
+  await db.query('SELECT * FROM fn_attachment_delete($1,$2)', [userId, id]);
   removeFile(row);
 }
 
 async function removeForResource(userId, resourceType, resourceId) {
-  const result = await db.query(
-    'SELECT * FROM attachments WHERE user_id = $1 AND resource_type = $2 AND resource_id = $3',
-    [userId, resourceType, resourceId],
-  );
-  await db.query(
-    'DELETE FROM attachments WHERE user_id = $1 AND resource_type = $2 AND resource_id = $3',
-    [userId, resourceType, resourceId],
-  );
+  const result = await db.query('SELECT * FROM fn_attachment_delete_for_resource($1,$2,$3)', [userId, resourceType, resourceId]);
   for (const row of result.rows) removeFile(row);
 }
 
