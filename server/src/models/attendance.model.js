@@ -2,124 +2,64 @@ const db = require('../db');
 
 const AttendanceModel = {
   subjectExistsAndOwned: async (subjectId, userId) => {
-    const result = await db.query('SELECT id FROM subjects WHERE id = $1 AND user_id = $2', [subjectId, userId]);
-    return result.rowCount > 0;
+    const result = await db.query('SELECT fn_subject_owned($1, $2) AS exists', [subjectId, userId]);
+    return Boolean(result.rows[0]?.exists);
   },
 
   slotExistsForSubjectAndUser: async (slotId, subjectId, userId) => {
-    const result = await db.query(
-      `SELECT 1
-         FROM schedule_slots sc
-         JOIN subjects s ON s.id = sc.subject_id
-        WHERE sc.id = $1 AND sc.subject_id = $2 AND s.user_id = $3`,
-      [slotId, subjectId, userId],
-    );
-    return result.rowCount > 0;
+    const result = await db.query('SELECT fn_slot_exists_for_subject_user($1, $2, $3) AS exists', [slotId, subjectId, userId]);
+    return Boolean(result.rows[0]?.exists);
   },
 
   findDuplicate: async (subjectId, date, slotId, excludeId = null) => {
-    let result;
-    if (slotId === null || slotId === undefined) {
-      result = await db.query(
-        `SELECT id FROM attendance_records
-          WHERE subject_id = $1 AND date = $2 AND slot_id IS NULL
-            AND ($3::int IS NULL OR id <> $3)`,
-        [subjectId, date, excludeId],
-      );
-    } else {
-      result = await db.query(
-        `SELECT id FROM attendance_records
-          WHERE subject_id = $1 AND date = $2 AND slot_id = $3
-            AND ($4::int IS NULL OR id <> $4)`,
-        [subjectId, date, slotId, excludeId],
-      );
-    }
+    const result = await db.query('SELECT * FROM fn_attendance_find_duplicate($1, $2, $3, $4)', [
+      subjectId, date, slotId ?? null, excludeId,
+    ]);
     return result.rows[0] || null;
   },
 
   create: async ({ subjectId, slotId, date, status, note }) => {
-    const result = await db.query(
-      `INSERT INTO attendance_records (subject_id, slot_id, date, status, note)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING *`,
-      [subjectId, slotId ?? null, date, status, note ?? null],
-    );
+    const result = await db.query('SELECT * FROM fn_attendance_create($1, $2, $3, $4, $5)', [
+      subjectId, slotId ?? null, date, status, note ?? null,
+    ]);
     return result.rows[0];
   },
 
   findByIdAndUserId: async (id, userId) => {
-    const result = await db.query(
-      `SELECT a.* FROM attendance_records a
-        JOIN subjects s ON s.id = a.subject_id
-       WHERE a.id = $1 AND s.user_id = $2`,
-      [id, userId],
-    );
+    const result = await db.query('SELECT * FROM fn_attendance_get($1, $2)', [id, userId]);
     return result.rows[0] || null;
   },
 
   findAllByUserId: async (userId, { subjectId, from, to, limit, offset } = {}) => {
-    const params = [userId];
-    let sql = `SELECT a.* FROM attendance_records a
-                 JOIN subjects s ON s.id = a.subject_id
-                WHERE s.user_id = $1`;
-
-    if (subjectId) {
-      sql += ` AND a.subject_id = $${params.length + 1}`;
-      params.push(Number(subjectId));
-    }
-    if (from) {
-      sql += ` AND a.date >= $${params.length + 1}`;
-      params.push(from);
-    }
-    if (to) {
-      sql += ` AND a.date <= $${params.length + 1}`;
-      params.push(to);
-    }
-
-    sql += ' ORDER BY a.date DESC';
-
-    if (limit !== undefined) {
-      sql += ` LIMIT $${params.length + 1}`;
-      params.push(limit);
-    }
-    if (offset !== undefined) {
-      sql += ` OFFSET $${params.length + 1}`;
-      params.push(offset);
-    }
-
-    const result = await db.query(sql, params);
+    const result = await db.query('SELECT * FROM fn_attendance_list($1, $2, $3, $4, $5, $6)', [
+      userId,
+      subjectId ? Number(subjectId) : null,
+      from || null,
+      to || null,
+      limit ?? null,
+      offset ?? null,
+    ]);
     return result.rows;
   },
 
-  /** Update a record owned by `userId`; returns the updated row or null. */
   update: async (id, updates, current, userId) => {
-    const result = await db.query(
-      `UPDATE attendance_records a
-          SET subject_id = $1, slot_id = $2, date = $3, status = $4, note = $5
-         FROM subjects s
-        WHERE a.id = $6 AND a.subject_id = s.id AND s.user_id = $7
-        RETURNING a.*`,
-      [
-        updates.subjectId ?? current.subject_id,
-        updates.slotId !== undefined ? updates.slotId : current.slot_id,
-        updates.date ?? current.date,
-        updates.status ?? current.status,
-        updates.note !== undefined ? updates.note : current.note,
-        id,
-        userId,
-      ],
-    );
+    const setSlot = Object.prototype.hasOwnProperty.call(updates, 'slotId');
+    const setNote = Object.prototype.hasOwnProperty.call(updates, 'note');
+    const result = await db.query('SELECT * FROM fn_attendance_update($1, $2, $3, $4, $5, $6, $7, $8, $9)', [
+      id,
+      userId,
+      updates.subjectId ?? current.subject_id,
+      setSlot ? (updates.slotId ?? null) : null,
+      setSlot,
+      updates.date ?? current.date,
+      updates.status ?? current.status,
+      setNote ? (updates.note ?? null) : null,
+      setNote,
+    ]);
     return result.rows[0] || null;
   },
 
-  delete: (id, userId) => {
-    return db.query(
-      `DELETE FROM attendance_records a
-        USING subjects s
-        WHERE a.id = $1 AND a.subject_id = s.id AND s.user_id = $2`,
-      [id, userId],
-    );
-  },
+  delete: (id, userId) => db.query('SELECT fn_attendance_delete($1, $2) AS count', [id, userId]),
 };
 
 module.exports = AttendanceModel;

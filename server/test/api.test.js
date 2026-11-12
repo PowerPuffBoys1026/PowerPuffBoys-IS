@@ -274,7 +274,8 @@ test('school works support updates, status changes, and filters', async () => {
   assert.equal(done.body.data.length, 1);
 
   const deleted = await req('DELETE', `/works/${workId}`, { token });
-  assert.equal(deleted.status, 204);
+  assert.equal(deleted.status, 200);
+  assert.equal(deleted.body?.data?.success, true);
 });
 
 test('attendance rejects duplicate sessions and produces a summary', async () => {

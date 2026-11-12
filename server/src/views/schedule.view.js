@@ -16,7 +16,9 @@ function toSlot(row) {
     startTime: formatTime(row.start_time),
     endTime: formatTime(row.end_time),
     room: row.room,
+    building: row.building ?? null,
     modality: row.modality,
+    weekPattern: row.week_pattern ?? 'every',
   };
 }
 

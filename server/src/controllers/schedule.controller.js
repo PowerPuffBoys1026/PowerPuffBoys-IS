@@ -14,7 +14,9 @@ const slotSchema = z.object({
   startTime: z.string().regex(timeRegex, 'startTime must be HH:MM (24h)'),
   endTime: z.string().regex(timeRegex, 'endTime must be HH:MM (24h)'),
   room: z.string().trim().max(120).nullish(),
+  building: z.string().trim().max(120).nullish(),
   modality: z.string().trim().max(60).nullish(),
+  weekPattern: z.enum(['every', 'a', 'b']).optional(),
 });
 
 const slotUpdateSchema = slotSchema.partial();
@@ -56,7 +58,9 @@ const ScheduleController = {
       startTime: data.startTime,
       endTime: data.endTime,
       room: data.room ?? null,
+      building: data.building ?? null,
       modality: data.modality ?? null,
+      weekPattern: data.weekPattern ?? 'every',
     });
 
     res.status(201).json({ data: toSlot(slot) });
@@ -77,9 +81,10 @@ const ScheduleController = {
 
   delete: async (req, res) => {
     const id = parseId(req.params.id);
-    const result = await ScheduleModel.delete(id, req.userId);
-    if (!result.rowCount) throw new HttpError(404, 'Schedule slot not found');
-    res.status(204).end();
+    await ownedSlot(id, req.userId);
+    const recycleBin = require('../services/recycle_bin');
+    const recycleBinId = await recycleBin.trashRecord(req.userId, 'schedule', id);
+    res.json({ data: { success: true, recycleBinId } });
   },
 };
 

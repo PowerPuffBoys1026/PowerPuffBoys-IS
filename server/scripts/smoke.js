@@ -259,7 +259,7 @@ async function main() {
     check('another user cannot patch the work -> 404', r.status === 404);
 
     r = await req('DELETE', `/works/${workId}`, { token });
-    check('delete work -> 204', r.status === 204);
+    check('delete work -> soft deleted', r.status === 200 && r.json?.data?.success === true);
     r = await req('GET', '/works', { token });
     check('work list empty after delete', r.json.data.length === 0);
 
@@ -286,7 +286,7 @@ async function main() {
     check('another user cannot pin the note -> 404', r.status === 404);
 
     r = await req('DELETE', `/notes/${noteId}`, { token });
-    check('delete note', r.status === 204);
+    check('delete note', r.status === 200 && r.json?.data?.success === true);
 
     r = await req('POST', '/subjects', {
       token,

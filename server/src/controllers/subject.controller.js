@@ -10,6 +10,8 @@ const subjectSchema = z.object({
   code: z.string().trim().min(1, 'Subject code is required').max(20),
   title: z.string().trim().min(1, 'Subject title is required').max(200),
   instructor: z.string().trim().max(120).nullish(),
+  instructorEmail: z.string().trim().email().nullish().or(z.literal('')).transform(v => v === '' ? null : v),
+  officeHours: z.string().trim().max(200).nullish(),
   units: z.number().int().min(0).max(20).optional(),
   color: z
     .string()
@@ -39,6 +41,8 @@ const SubjectController = {
       code: data.code,
       title: data.title,
       instructor: data.instructor ?? null,
+      instructorEmail: data.instructorEmail ?? null,
+      officeHours: data.officeHours ?? null,
       units: data.units ?? 0,
       color: data.color ?? '#4F46E5',
     });
@@ -59,6 +63,8 @@ const SubjectController = {
       code: data.code ?? current.code,
       title: data.title ?? current.title,
       instructor: data.instructor !== undefined ? data.instructor : current.instructor,
+      instructorEmail: data.instructorEmail !== undefined ? data.instructorEmail : current.instructor_email,
+      officeHours: data.officeHours !== undefined ? data.officeHours : current.office_hours,
       units: data.units ?? current.units,
       color: data.color ?? current.color,
     }, req.userId);
@@ -69,9 +75,9 @@ const SubjectController = {
 
   delete: async (req, res) => {
     const id = parseId(req.params.id);
-    const result = await SubjectModel.delete(id, req.userId);
-    if (!result.rowCount) throw new HttpError(404, 'Subject not found');
-    res.status(204).end();
+    const recycleBin = require('../services/recycle_bin');
+    const recycleBinId = await recycleBin.trashRecord(req.userId, 'subject', id);
+    res.json({ data: { success: true, recycleBinId } });
   },
 };
 

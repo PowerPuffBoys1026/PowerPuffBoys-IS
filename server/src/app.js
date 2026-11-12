@@ -1,3 +1,5 @@
+const path = require('node:path');
+const fs = require('node:fs');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -13,6 +15,10 @@ const attendanceRoutes = require('./routes/attendance');
 const workRoutes = require('./routes/works');
 const dashboardRoutes = require('./routes/dashboard');
 const noteRoutes = require('./routes/notes');
+const studyRoutes = require('./routes/study');
+const gradeRoutes = require('./routes/grades');
+const attachmentRoutes = require('./routes/attachments');
+const recycleBinRoutes = require('./routes/recycle_bin');
 
 const app = express();
 
@@ -26,6 +32,12 @@ app.use(
   }),
 );
 app.use(express.json({ limit: '1mb' }));
+
+// v2 web frontend (served from server/public)
+const publicPath = path.join(__dirname, '..', 'public');
+if (fs.existsSync(publicPath)) {
+  app.use(express.static(publicPath));
+}
 
 const API_ENDPOINTS = [
   { method: 'GET', path: '/api/health', description: 'Health check (API + database)' },
@@ -143,6 +155,18 @@ app.use('/api/attendance', attendanceRoutes);
 app.use('/api/works', workRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/notes', noteRoutes);
+app.use('/api/study', studyRoutes);
+app.use('/api/grades', gradeRoutes);
+app.use('/api/attachments', attachmentRoutes);
+app.use('/api/recycle-bin', recycleBinRoutes);
+
+// SPA fallback for v2 web frontend (non-API GET requests)
+app.get(/^(?!\/api).*/, (req, res, next) => {
+  if (req.method !== 'GET') return next();
+  const indexFile = path.join(publicPath, 'index.html');
+  if (fs.existsSync(indexFile)) return res.sendFile(indexFile);
+  return next();
+});
 
 app.use(notFound);
 app.use(errorHandler);

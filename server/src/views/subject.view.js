@@ -7,6 +7,8 @@ function toSubject(row) {
     code: row.code,
     title: row.title,
     instructor: row.instructor,
+    instructorEmail: row.instructor_email ?? null,
+    officeHours: row.office_hours ?? null,
     units: row.units,
     color: row.color,
     createdAt: row.created_at,

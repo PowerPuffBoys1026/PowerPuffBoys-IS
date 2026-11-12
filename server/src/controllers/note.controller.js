@@ -4,6 +4,7 @@ const { validate } = require('../utils/validate');
 const {
   parseId,
   parseOptionalBoolean,
+  parseOptionalInt,
   parseOptionalString,
   parsePagination,
 } = require('../utils/parse');
@@ -12,6 +13,7 @@ const NoteModel = require('../models/note.model');
 const { toNote } = require('../views/note.view');
 
 const noteSchema = z.object({
+  subjectId: z.number().int().positive().nullish(),
   title: z.string().trim().min(1).max(200).optional(),
   content: z.string().max(20000).optional(),
   isPinned: z.boolean().optional(),
@@ -35,12 +37,14 @@ const NoteController = {
     const search = parseOptionalString(req.query.search, 'search');
     const tag = parseOptionalString(req.query.tag, 'tag');
     const pinned = parseOptionalBoolean(req.query.pinned, 'pinned');
+    const subjectId = parseOptionalInt(req.query.subjectId, { name: 'subjectId', min: 1, max: Number.MAX_SAFE_INTEGER });
     const { limit, offset } = parsePagination(req.query);
 
     const rows = await NoteModel.findAllByUserId(req.userId, {
       search,
       tag,
       pinned,
+      subjectId,
       limit,
       offset,
     });
@@ -49,8 +53,12 @@ const NoteController = {
 
   create: async (req, res) => {
     const data = validate(noteSchema, req.body);
+    if (data.subjectId != null && !(await NoteModel.subjectExistsAndOwned(data.subjectId, req.userId))) {
+      throw new HttpError(404, 'Subject not found');
+    }
     const note = await NoteModel.create({
       userId: req.userId,
+      subjectId: data.subjectId ?? null,
       title: data.title ?? 'Untitled',
       content: data.content ?? '',
       isPinned: data.isPinned ?? false,
@@ -68,6 +76,9 @@ const NoteController = {
     const id = parseId(req.params.id);
     const current = await ownedNote(id, req.userId);
     const data = validate(noteUpdateSchema, req.body);
+    if (data.subjectId !== undefined && data.subjectId != null && !(await NoteModel.subjectExistsAndOwned(data.subjectId, req.userId))) {
+      throw new HttpError(404, 'Subject not found');
+    }
     const updated = await NoteModel.update(id, data, current, req.userId);
     if (!updated) throw new HttpError(404, 'Note not found');
     res.json({ data: toNote(updated) });
@@ -82,9 +93,10 @@ const NoteController = {
 
   delete: async (req, res) => {
     const id = parseId(req.params.id);
-    const result = await NoteModel.delete(id, req.userId);
-    if (!result.rowCount) throw new HttpError(404, 'Note not found');
-    res.status(204).end();
+    await ownedNote(id, req.userId);
+    const recycleBin = require('../services/recycle_bin');
+    const recycleBinId = await recycleBin.trashRecord(req.userId, 'note', id);
+    res.json({ data: { success: true, recycleBinId } });
   },
 };
 
