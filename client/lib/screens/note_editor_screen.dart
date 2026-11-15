@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/note.dart';
+import '../state/app_state.dart';
 import '../state/notes_state.dart';
+import '../widgets/attachments_panel.dart';
 
 class NoteEditorScreen extends StatefulWidget {
   const NoteEditorScreen({super.key, required this.note});
@@ -23,12 +25,14 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
   bool _isUnderline = false;
   double _fontSize = 16;
   bool _saving = false;
+  int? _subjectId;
 
   @override
   void initState() {
     super.initState();
     _titleController = TextEditingController(text: widget.note.title);
     _contentController = TextEditingController(text: widget.note.content);
+    _subjectId = widget.note.subjectId;
   }
 
   @override
@@ -61,6 +65,10 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
       tags: widget.note.tags,
       createdAt: widget.note.createdAt,
       updatedAt: DateTime.now().toIso8601String(),
+      subjectId: _subjectId,
+      subjectCode: widget.note.subjectCode,
+      subjectTitle: widget.note.subjectTitle,
+      subjectColor: widget.note.subjectColor,
     );
     await notes.update(updated);
     if (mounted) {
@@ -93,6 +101,15 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
           ),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.attach_file),
+            onPressed: () => AttachmentsPanel.show(
+              context,
+              resourceType: 'notes',
+              resourceId: widget.note.id,
+            ),
+            tooltip: 'Attachments',
+          ),
           IconButton(
             icon: _saving
                 ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
@@ -165,6 +182,23 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
                   ),
                 ),
               ),
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<int?>(
+              initialValue: _subjectId,
+              decoration: const InputDecoration(
+                labelText: 'Linked subject',
+                prefixIcon: Icon(Icons.book_outlined),
+              ),
+              items: [
+                const DropdownMenuItem(value: null, child: Text('No subject')),
+                for (final subject in context.watch<AppState>().subjects)
+                  DropdownMenuItem(
+                    value: subject.id,
+                    child: Text('${subject.code} · ${subject.title}'),
+                  ),
+              ],
+              onChanged: (value) => setState(() => _subjectId = value),
             ),
             const SizedBox(height: 12),
             Expanded(

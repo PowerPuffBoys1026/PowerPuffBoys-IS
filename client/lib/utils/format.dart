@@ -32,6 +32,26 @@ String formatClock(String hhmm) {
   return '$h:$minute $period';
 }
 
+/// "512 B", "48.2 KB", "3.4 MB"
+String formatBytes(int bytes) {
+  if (bytes < 1024) return '$bytes B';
+  final kb = bytes / 1024;
+  if (kb < 1024) return '${kb.toStringAsFixed(1)} KB';
+  final mb = kb / 1024;
+  return '${mb.toStringAsFixed(1)} MB';
+}
+
+/// "0:07", "1:05:00" for a remaining timer.
+String formatDuration(Duration duration) {
+  final d = duration.isNegative ? Duration.zero : duration;
+  final h = d.inHours;
+  final m = d.inMinutes.remainder(60);
+  final s = d.inSeconds.remainder(60);
+  String two(int v) => v.toString().padLeft(2, '0');
+  if (h > 0) return '$h:${two(m)}:${two(s)}';
+  return '$m:${two(s)}';
+}
+
 /// Human-friendly relative due label, e.g. "in 3 days" / "overdue".
 String dueLabel(DateTime? due, {DateTime? now}) {
   if (due == null) return 'No due date';

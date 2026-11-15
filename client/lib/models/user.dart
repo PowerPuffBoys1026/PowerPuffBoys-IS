@@ -5,6 +5,8 @@ class User {
     required this.fullName,
     this.studentNo,
     this.course,
+    this.yearLevel,
+    this.createdAt,
   });
 
   final int id;
@@ -12,6 +14,8 @@ class User {
   final String fullName;
   final String? studentNo;
   final String? course;
+  final String? yearLevel;
+  final String? createdAt;
 
   factory User.fromJson(Map<String, dynamic> json) => User(
         id: json['id'] as int,
@@ -19,5 +23,7 @@ class User {
         fullName: json['fullName'] as String,
         studentNo: json['studentNo'] as String?,
         course: json['course'] as String?,
+        yearLevel: json['yearLevel'] as String?,
+        createdAt: json['createdAt'] as String?,
       );
 }

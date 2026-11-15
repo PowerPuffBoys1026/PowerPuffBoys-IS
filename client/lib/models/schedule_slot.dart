@@ -9,7 +9,9 @@ class ScheduleSlot {
     required this.startTime,
     required this.endTime,
     this.room,
+    this.building,
     this.modality,
+    this.weekPattern = 'every',
   });
 
   final int id;
@@ -21,7 +23,11 @@ class ScheduleSlot {
   final String startTime;
   final String endTime;
   final String? room;
+  final String? building;
   final String? modality;
+
+  /// `every`, `a`, or `b` — used by the weekly A/B timetable view.
+  final String weekPattern;
 
   factory ScheduleSlot.fromJson(Map<String, dynamic> json) => ScheduleSlot(
         id: json['id'] as int,
@@ -33,6 +39,8 @@ class ScheduleSlot {
         startTime: json['startTime'] as String,
         endTime: json['endTime'] as String,
         room: json['room'] as String?,
+        building: json['building'] as String?,
         modality: json['modality'] as String?,
+        weekPattern: json['weekPattern'] as String? ?? 'every',
       );
 }

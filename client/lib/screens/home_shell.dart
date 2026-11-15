@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../state/auth_state.dart';
-import 'attendance_screen.dart';
 import 'dashboard_screen.dart';
-import 'notes_screen.dart';
+import 'focus_screen.dart';
+import 'grades_screen.dart';
+import 'more_screen.dart';
 import 'schedule_screen.dart';
-import 'subjects_screen.dart';
 import 'works_screen.dart';
 
 /// Signed-in shell. Uses a NavigationRail on wide screens (web / desktop) and a
@@ -21,23 +21,24 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> {
   int _index = 0;
 
-  static const _titles = ['Dashboard', 'Schedule', 'Attendance', 'School Works', 'Subjects', 'Notes'];
+  static const _titles = ['Dashboard', 'Schedule', 'School Works', 'Grades', 'Focus', 'More'];
+  static const _labels = ['Home', 'Schedule', 'Works', 'Grades', 'Focus', 'More'];
   static const _icons = [
     Icons.dashboard_outlined,
     Icons.calendar_month_outlined,
-    Icons.fact_check_outlined,
     Icons.assignment_outlined,
-    Icons.book_outlined,
-    Icons.note_alt_outlined,
+    Icons.grading_outlined,
+    Icons.timer_outlined,
+    Icons.more_horiz,
   ];
 
   static const _screens = [
     DashboardScreen(),
     ScheduleScreen(),
-    AttendanceScreen(),
     WorksScreen(),
-    SubjectsScreen(),
-    NotesScreen(),
+    GradesScreen(),
+    FocusScreen(),
+    MoreScreen(),
   ];
 
   @override
@@ -72,7 +73,7 @@ class _HomeShellState extends State<HomeShell> {
                     for (var i = 0; i < _titles.length; i++)
                       NavigationRailDestination(
                         icon: Icon(_icons[i]),
-                        label: Text(_titles[i]),
+                        label: Text(_labels[i]),
                       ),
                   ],
                 ),
@@ -88,7 +89,7 @@ class _HomeShellState extends State<HomeShell> {
               onDestinationSelected: (i) => setState(() => _index = i),
               destinations: [
                 for (var i = 0; i < _titles.length; i++)
-                  NavigationDestination(icon: Icon(_icons[i]), label: _titles[i]),
+                  NavigationDestination(icon: Icon(_icons[i]), label: _labels[i]),
               ],
             ),
     );

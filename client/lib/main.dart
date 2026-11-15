@@ -7,18 +7,28 @@ import 'screens/home_shell.dart';
 import 'screens/login_screen.dart';
 import 'state/app_state.dart';
 import 'state/auth_state.dart';
-import 'state/token_store.dart';
+import 'state/grades_state.dart';
 import 'state/notes_state.dart';
+import 'state/settings_state.dart';
+import 'state/study_state.dart';
+import 'state/token_store.dart';
 import 'theme.dart';
 import 'widgets/animated_glass_background.dart';
 
-void main() {
-  final api = Api(ApiClient());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final client = ApiClient();
+  final api = Api(client);
+  final settings = SettingsState(client);
+  await settings.load();
   runApp(ClassMateApp(
     api: api,
     auth: AuthState(api, TokenStore()),
     appState: AppState(api),
     notes: NotesState(api),
+    grades: GradesState(api),
+    study: StudyState(api),
+    settings: settings,
   ));
 }
 
@@ -29,12 +39,18 @@ class ClassMateApp extends StatelessWidget {
     required this.auth,
     required this.appState,
     required this.notes,
+    required this.grades,
+    required this.study,
+    required this.settings,
   });
 
   final Api api;
   final AuthState auth;
   final AppState appState;
   final NotesState notes;
+  final GradesState grades;
+  final StudyState study;
+  final SettingsState settings;
 
   @override
   Widget build(BuildContext context) {
@@ -44,6 +60,9 @@ class ClassMateApp extends StatelessWidget {
         ChangeNotifierProvider<AuthState>.value(value: auth),
         ChangeNotifierProvider<AppState>.value(value: appState),
         ChangeNotifierProvider<NotesState>.value(value: notes),
+        ChangeNotifierProvider<GradesState>.value(value: grades),
+        ChangeNotifierProvider<StudyState>.value(value: study),
+        ChangeNotifierProvider<SettingsState>.value(value: settings),
       ],
       child: MaterialApp(
         title: 'ClassMate',
@@ -56,8 +75,8 @@ class ClassMateApp extends StatelessWidget {
   }
 }
 
-/// Decides between the login flow and the signed-in shell, and keeps [AppState]
-/// in sync with the auth state.
+/// Decides between the login flow and the signed-in shell, and keeps the
+/// data states in sync with the auth state.
 class _Root extends StatefulWidget {
   const _Root();
 
@@ -86,13 +105,20 @@ class _RootState extends State<_Root> {
     if (!mounted) return;
     final app = context.read<AppState>();
     final notes = context.read<NotesState>();
+    final grades = context.read<GradesState>();
+    final study = context.read<StudyState>();
     if (_auth.isAuthenticated) {
       if (app.dashboard == null && !app.loading && app.error == null) {
         app.refreshAll();
       }
       notes.load();
+      grades.load();
+      study.load();
     } else {
       app.reset();
+      notes.reset();
+      grades.reset();
+      study.reset();
     }
   }
 

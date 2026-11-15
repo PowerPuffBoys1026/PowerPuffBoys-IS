@@ -14,7 +14,7 @@ class ScheduleScreen extends StatelessWidget {
 
   static const _weekOrder = [1, 2, 3, 4, 5, 6, 0]; // Monday first
 
-  Future<void> _openForm(BuildContext context) async {
+  Future<void> _openForm(BuildContext context, {ScheduleSlot? existing}) async {
     final app = context.read<AppState>();
     if (app.subjects.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -24,18 +24,34 @@ class ScheduleScreen extends StatelessWidget {
     }
     final result = await showDialog<_SlotFormResult>(
       context: context,
-      builder: (_) => _SlotFormDialog(subjects: app.subjects),
+      builder: (_) => _SlotFormDialog(subjects: app.subjects, existing: existing),
     );
     if (result == null || !context.mounted) return;
     try {
-      await app.addSlot(
-        subjectId: result.subjectId,
-        dayOfWeek: result.dayOfWeek,
-        startTime: result.startTime,
-        endTime: result.endTime,
-        room: result.room,
-        modality: result.modality,
-      );
+      if (existing == null) {
+        await app.addSlot(
+          subjectId: result.subjectId,
+          dayOfWeek: result.dayOfWeek,
+          startTime: result.startTime,
+          endTime: result.endTime,
+          room: result.room,
+          building: result.building,
+          modality: result.modality,
+          weekPattern: result.weekPattern,
+        );
+      } else {
+        await app.editSlot(
+          existing.id,
+          subjectId: result.subjectId,
+          dayOfWeek: result.dayOfWeek,
+          startTime: result.startTime,
+          endTime: result.endTime,
+          room: result.room,
+          building: result.building,
+          modality: result.modality,
+          weekPattern: result.weekPattern,
+        );
+      }
     } on ApiException catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
@@ -74,6 +90,7 @@ class ScheduleScreen extends StatelessWidget {
                           day: day,
                           slots: slots.where((s) => s.dayOfWeek == day).toList(),
                           onDelete: (slot) => _remove(context, slot),
+                          onEdit: (slot) => _openForm(context, existing: slot),
                         ),
                     ],
                   ),
@@ -90,11 +107,17 @@ class ScheduleScreen extends StatelessWidget {
 }
 
 class _DayColumn extends StatelessWidget {
-  const _DayColumn({required this.day, required this.slots, required this.onDelete});
+  const _DayColumn({
+    required this.day,
+    required this.slots,
+    required this.onDelete,
+    required this.onEdit,
+  });
 
   final int day;
   final List<ScheduleSlot> slots;
   final void Function(ScheduleSlot) onDelete;
+  final void Function(ScheduleSlot) onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -113,30 +136,43 @@ class _DayColumn extends StatelessWidget {
                 for (final slot in slots)
                   Card(
                     color: hexToColor(slot.color).withValues(alpha: 0.12),
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(slot.subjectCode,
-                                    style: const TextStyle(fontWeight: FontWeight.bold)),
-                              ),
-                              InkWell(
-                                onTap: () => onDelete(slot),
-                                child: const Icon(Icons.close, size: 16),
-                              ),
-                            ],
-                          ),
-                          Text(slot.subjectTitle, style: Theme.of(context).textTheme.bodySmall),
-                          const SizedBox(height: 4),
-                          Text('${formatClock(slot.startTime)} – ${formatClock(slot.endTime)}',
-                              style: Theme.of(context).textTheme.bodySmall),
-                          if (slot.room != null)
-                            Text(slot.room!, style: Theme.of(context).textTheme.bodySmall),
-                        ],
+                    child: InkWell(
+                      onTap: () => onEdit(slot),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(slot.subjectCode,
+                                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                                ),
+                                if (slot.weekPattern != 'every')
+                                  Padding(
+                                    padding: const EdgeInsets.only(right: 4),
+                                    child: Chip(
+                                      label: Text('Week ${slot.weekPattern.toUpperCase()}'),
+                                      visualDensity: VisualDensity.compact,
+                                    ),
+                                  ),
+                                InkWell(
+                                  onTap: () => onDelete(slot),
+                                  child: const Icon(Icons.close, size: 16),
+                                ),
+                              ],
+                            ),
+                            Text(slot.subjectTitle, style: Theme.of(context).textTheme.bodySmall),
+                            const SizedBox(height: 4),
+                            Text('${formatClock(slot.startTime)} – ${formatClock(slot.endTime)}',
+                                style: Theme.of(context).textTheme.bodySmall),
+                            if (slot.room != null)
+                              Text(slot.room!, style: Theme.of(context).textTheme.bodySmall),
+                            if (slot.building != null)
+                              Text(slot.building!, style: Theme.of(context).textTheme.bodySmall),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -156,19 +192,24 @@ class _SlotFormResult {
     required this.startTime,
     required this.endTime,
     this.room,
+    this.building,
     this.modality,
+    this.weekPattern = 'every',
   });
   final int subjectId;
   final int dayOfWeek;
   final String startTime;
   final String endTime;
   final String? room;
+  final String? building;
   final String? modality;
+  final String weekPattern;
 }
 
 class _SlotFormDialog extends StatefulWidget {
-  const _SlotFormDialog({required this.subjects});
+  const _SlotFormDialog({required this.subjects, this.existing});
   final List<Subject> subjects;
+  final ScheduleSlot? existing;
 
   @override
   State<_SlotFormDialog> createState() => _SlotFormDialogState();
@@ -177,16 +218,26 @@ class _SlotFormDialog extends StatefulWidget {
 class _SlotFormDialogState extends State<_SlotFormDialog> {
   final _formKey = GlobalKey<FormState>();
   late int _subjectId;
-  int _day = 1;
-  final _start = TextEditingController(text: '08:00');
-  final _end = TextEditingController(text: '09:30');
-  final _room = TextEditingController();
-  String _modality = 'face-to-face';
+  late int _day;
+  late final TextEditingController _start;
+  late final TextEditingController _end;
+  late final TextEditingController _room;
+  late final TextEditingController _building;
+  late String _modality;
+  late String _weekPattern;
 
   @override
   void initState() {
     super.initState();
-    _subjectId = widget.subjects.first.id;
+    final e = widget.existing;
+    _subjectId = e?.subjectId ?? widget.subjects.first.id;
+    _day = e?.dayOfWeek ?? 1;
+    _start = TextEditingController(text: e?.startTime ?? '08:00');
+    _end = TextEditingController(text: e?.endTime ?? '09:30');
+    _room = TextEditingController(text: e?.room ?? '');
+    _building = TextEditingController(text: e?.building ?? '');
+    _modality = e?.modality ?? 'face-to-face';
+    _weekPattern = e?.weekPattern ?? 'every';
   }
 
   @override
@@ -194,6 +245,7 @@ class _SlotFormDialogState extends State<_SlotFormDialog> {
     _start.dispose();
     _end.dispose();
     _room.dispose();
+    _building.dispose();
     super.dispose();
   }
 
@@ -214,7 +266,9 @@ class _SlotFormDialogState extends State<_SlotFormDialog> {
         startTime: _start.text.trim(),
         endTime: _end.text.trim(),
         room: _room.text.trim(),
+        building: _building.text.trim(),
         modality: _modality,
+        weekPattern: _weekPattern,
       ),
     );
   }
@@ -222,7 +276,7 @@ class _SlotFormDialogState extends State<_SlotFormDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Add class'),
+      title: Text(widget.existing == null ? 'Add class' : 'Edit class'),
       content: SingleChildScrollView(
         child: Form(
           key: _formKey,
@@ -270,6 +324,10 @@ class _SlotFormDialogState extends State<_SlotFormDialog> {
                 controller: _room,
                 decoration: const InputDecoration(labelText: 'Room (optional)'),
               ),
+              TextFormField(
+                controller: _building,
+                decoration: const InputDecoration(labelText: 'Building (optional)'),
+              ),
               DropdownButtonFormField<String>(
                 initialValue: _modality,
                 decoration: const InputDecoration(labelText: 'Modality'),
@@ -279,6 +337,16 @@ class _SlotFormDialogState extends State<_SlotFormDialog> {
                   DropdownMenuItem(value: 'hybrid', child: Text('Hybrid')),
                 ],
                 onChanged: (v) => setState(() => _modality = v!),
+              ),
+              DropdownButtonFormField<String>(
+                initialValue: _weekPattern,
+                decoration: const InputDecoration(labelText: 'Week pattern'),
+                items: const [
+                  DropdownMenuItem(value: 'every', child: Text('Every week')),
+                  DropdownMenuItem(value: 'a', child: Text('Week A only')),
+                  DropdownMenuItem(value: 'b', child: Text('Week B only')),
+                ],
+                onChanged: (v) => setState(() => _weekPattern = v!),
               ),
             ],
           ),

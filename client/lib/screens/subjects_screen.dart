@@ -22,6 +22,8 @@ class SubjectsScreen extends StatelessWidget {
           code: result.code,
           title: result.title,
           instructor: result.instructor,
+          instructorEmail: result.instructorEmail,
+          officeHours: result.officeHours,
           units: result.units,
           color: result.color,
         );
@@ -31,6 +33,8 @@ class SubjectsScreen extends StatelessWidget {
           code: result.code,
           title: result.title,
           instructor: result.instructor,
+          instructorEmail: result.instructorEmail,
+          officeHours: result.officeHours,
           units: result.units,
           color: result.color,
         );
@@ -81,7 +85,11 @@ class SubjectsScreen extends StatelessWidget {
                         child: Text(s.code.isEmpty ? '?' : s.code[0], style: const TextStyle(color: Colors.white)),
                       ),
                       title: Text('${s.code} · ${s.title}'),
-                      subtitle: Text('${s.instructor ?? 'No instructor'} · ${s.units} units'),
+                      isThreeLine: true,
+                      subtitle: Text(
+                        '${s.instructor ?? 'No instructor'} · ${s.units} units\n'
+                        '${s.instructorEmail ?? 'No email'} · ${s.officeHours ?? 'No office hours'}',
+                      ),
                       trailing: PopupMenuButton<String>(
                         onSelected: (value) {
                           if (value == 'edit') _openForm(context, existing: s);
@@ -110,12 +118,16 @@ class _SubjectFormResult {
     required this.code,
     required this.title,
     this.instructor,
+    this.instructorEmail,
+    this.officeHours,
     this.units = 0,
     this.color = '#4F46E5',
   });
   final String code;
   final String title;
   final String? instructor;
+  final String? instructorEmail;
+  final String? officeHours;
   final int units;
   final String color;
 }
@@ -133,6 +145,8 @@ class _SubjectFormDialogState extends State<_SubjectFormDialog> {
   late final TextEditingController _code;
   late final TextEditingController _title;
   late final TextEditingController _instructor;
+  late final TextEditingController _instructorEmail;
+  late final TextEditingController _officeHours;
   late final TextEditingController _units;
   late String _color;
 
@@ -145,6 +159,8 @@ class _SubjectFormDialogState extends State<_SubjectFormDialog> {
     _code = TextEditingController(text: e?.code ?? '');
     _title = TextEditingController(text: e?.title ?? '');
     _instructor = TextEditingController(text: e?.instructor ?? '');
+    _instructorEmail = TextEditingController(text: e?.instructorEmail ?? '');
+    _officeHours = TextEditingController(text: e?.officeHours ?? '');
     _units = TextEditingController(text: (e?.units ?? 3).toString());
     _color = e?.color ?? _palette.first;
   }
@@ -154,6 +170,8 @@ class _SubjectFormDialogState extends State<_SubjectFormDialog> {
     _code.dispose();
     _title.dispose();
     _instructor.dispose();
+    _instructorEmail.dispose();
+    _officeHours.dispose();
     _units.dispose();
     super.dispose();
   }
@@ -166,6 +184,8 @@ class _SubjectFormDialogState extends State<_SubjectFormDialog> {
         code: _code.text.trim(),
         title: _title.text.trim(),
         instructor: _instructor.text.trim(),
+        instructorEmail: _instructorEmail.text.trim(),
+        officeHours: _officeHours.text.trim(),
         units: int.tryParse(_units.text.trim()) ?? 0,
         color: _color,
       ),
@@ -195,6 +215,15 @@ class _SubjectFormDialogState extends State<_SubjectFormDialog> {
               TextFormField(
                 controller: _instructor,
                 decoration: const InputDecoration(labelText: 'Instructor'),
+              ),
+              TextFormField(
+                controller: _instructorEmail,
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(labelText: 'Instructor email'),
+              ),
+              TextFormField(
+                controller: _officeHours,
+                decoration: const InputDecoration(labelText: 'Office hours'),
               ),
               TextFormField(
                 controller: _units,

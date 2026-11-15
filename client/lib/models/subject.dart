@@ -4,6 +4,8 @@ class Subject {
     required this.code,
     required this.title,
     this.instructor,
+    this.instructorEmail,
+    this.officeHours,
     this.units = 0,
     this.color = '#4F46E5',
   });
@@ -12,6 +14,8 @@ class Subject {
   final String code;
   final String title;
   final String? instructor;
+  final String? instructorEmail;
+  final String? officeHours;
   final int units;
   final String color;
 
@@ -20,6 +24,8 @@ class Subject {
         code: json['code'] as String,
         title: json['title'] as String,
         instructor: json['instructor'] as String?,
+        instructorEmail: json['instructorEmail'] as String?,
+        officeHours: json['officeHours'] as String?,
         units: (json['units'] as num?)?.toInt() ?? 0,
         color: json['color'] as String? ?? '#4F46E5',
       );

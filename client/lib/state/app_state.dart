@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 
 import '../api/api.dart';
 import '../api/api_client.dart';
-import '../config.dart';
 import '../models/attendance.dart';
 import '../models/dashboard.dart';
 import '../models/schedule_slot.dart';
@@ -45,7 +44,7 @@ class AppState extends ChangeNotifier {
     } on ApiException catch (e) {
       error = e.message;
     } catch (e) {
-      error = 'Could not reach the server (${e.runtimeType}: $e). API: ${AppConfig.apiBaseUrl}';
+      error = 'Could not reach the server (${e.runtimeType}: $e). API: ${_api.baseUrl}';
     } finally {
       loading = false;
       notifyListeners();
@@ -67,6 +66,8 @@ class AppState extends ChangeNotifier {
     required String code,
     required String title,
     String? instructor,
+    String? instructorEmail,
+    String? officeHours,
     int units = 0,
     String color = '#4F46E5',
   }) async {
@@ -74,6 +75,8 @@ class AppState extends ChangeNotifier {
       code: code,
       title: title,
       instructor: instructor,
+      instructorEmail: instructorEmail,
+      officeHours: officeHours,
       units: units,
       color: color,
     );
@@ -85,10 +88,21 @@ class AppState extends ChangeNotifier {
     required String code,
     required String title,
     String? instructor,
+    String? instructorEmail,
+    String? officeHours,
     int units = 0,
     String color = '#4F46E5',
   }) async {
-    await _api.updateSubject(id, code: code, title: title, instructor: instructor, units: units, color: color);
+    await _api.updateSubject(
+      id,
+      code: code,
+      title: title,
+      instructor: instructor,
+      instructorEmail: instructorEmail,
+      officeHours: officeHours,
+      units: units,
+      color: color,
+    );
     await refreshAll();
   }
 
@@ -105,7 +119,9 @@ class AppState extends ChangeNotifier {
     required String startTime,
     required String endTime,
     String? room,
+    String? building,
     String? modality,
+    String weekPattern = 'every',
   }) async {
     await _api.createSlot(
       subjectId: subjectId,
@@ -113,7 +129,34 @@ class AppState extends ChangeNotifier {
       startTime: startTime,
       endTime: endTime,
       room: room,
+      building: building,
       modality: modality,
+      weekPattern: weekPattern,
+    );
+    await refreshAll();
+  }
+
+  Future<void> editSlot(
+    int id, {
+    int? subjectId,
+    int? dayOfWeek,
+    String? startTime,
+    String? endTime,
+    String? room,
+    String? building,
+    String? modality,
+    String? weekPattern,
+  }) async {
+    await _api.updateSlot(
+      id,
+      subjectId: subjectId,
+      dayOfWeek: dayOfWeek,
+      startTime: startTime,
+      endTime: endTime,
+      room: room,
+      building: building,
+      modality: modality,
+      weekPattern: weekPattern,
     );
     await refreshAll();
   }
@@ -164,6 +207,35 @@ class AppState extends ChangeNotifier {
       dueAt: dueAt,
       priority: priority,
       notes: notes,
+    );
+    await refreshAll();
+  }
+
+  Future<void> editWork(
+    int id, {
+    String? title,
+    int? subjectId,
+    bool clearSubject = false,
+    String? type,
+    DateTime? dueAt,
+    bool clearDueAt = false,
+    String? priority,
+    String? status,
+    String? notes,
+    bool clearNotes = false,
+  }) async {
+    await _api.updateWork(
+      id,
+      title: title,
+      subjectId: subjectId,
+      clearSubject: clearSubject,
+      type: type,
+      dueAt: dueAt,
+      clearDueAt: clearDueAt,
+      priority: priority,
+      status: status,
+      notes: notes,
+      clearNotes: clearNotes,
     );
     await refreshAll();
   }

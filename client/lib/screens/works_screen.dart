@@ -6,6 +6,7 @@ import '../models/school_work.dart';
 import '../models/subject.dart';
 import '../state/app_state.dart';
 import '../utils/format.dart';
+import '../widgets/attachments_panel.dart';
 
 class WorksScreen extends StatefulWidget {
   const WorksScreen({super.key});
@@ -17,25 +18,45 @@ class WorksScreen extends StatefulWidget {
 class _WorksScreenState extends State<WorksScreen> {
   String _filter = 'all';
 
-  Future<void> _openForm() async {
+  Future<void> _openForm({SchoolWork? existing}) async {
     final app = context.read<AppState>();
     final result = await showDialog<_WorkFormResult>(
       context: context,
-      builder: (_) => _WorkFormDialog(subjects: app.subjects),
+      builder: (_) => _WorkFormDialog(subjects: app.subjects, existing: existing),
     );
     if (result == null || !mounted) return;
     try {
-      await app.addWork(
-        title: result.title,
-        subjectId: result.subjectId,
-        type: result.type,
-        dueAt: result.dueAt,
-        priority: result.priority,
-        notes: result.notes,
-      );
+      if (existing == null) {
+        await app.addWork(
+          title: result.title,
+          subjectId: result.subjectId,
+          type: result.type,
+          dueAt: result.dueAt,
+          priority: result.priority,
+          notes: result.notes,
+        );
+      } else {
+        final notes = result.notes?.trim() ?? '';
+        await app.editWork(
+          existing.id,
+          title: result.title,
+          subjectId: result.subjectId,
+          clearSubject: result.subjectId == null,
+          type: result.type,
+          dueAt: result.dueAt,
+          clearDueAt: result.dueAt == null,
+          priority: result.priority,
+          notes: notes,
+          clearNotes: notes.isEmpty,
+        );
+      }
     } on ApiException catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
     }
+  }
+
+  Future<void> _openAttachments(SchoolWork work) {
+    return AttachmentsPanel.show(context, resourceType: 'works', resourceId: work.id);
   }
 
   Future<void> _changeStatus(SchoolWork work, String status) async {
@@ -108,11 +129,21 @@ class _WorksScreenState extends State<WorksScreen> {
                               onSelected: (value) {
                                 if (value == 'delete') {
                                   _delete(w);
+                                } else if (value == 'edit') {
+                                  _openForm(existing: w);
+                                } else if (value == 'attachments') {
+                                  _openAttachments(w);
                                 } else {
                                   _changeStatus(w, value);
                                 }
                               },
                               itemBuilder: (_) => [
+                                const PopupMenuItem(value: 'edit', child: Text('Edit')),
+                                const PopupMenuItem(
+                                  value: 'attachments',
+                                  child: Text('Attachments'),
+                                ),
+                                const PopupMenuDivider(),
                                 const PopupMenuItem(value: 'todo', child: Text('Mark as To do')),
                                 const PopupMenuItem(value: 'doing', child: Text('Mark as Doing')),
                                 const PopupMenuItem(value: 'done', child: Text('Mark as Done')),
@@ -128,7 +159,7 @@ class _WorksScreenState extends State<WorksScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: _openForm,
+        onPressed: () => _openForm(),
         icon: const Icon(Icons.add),
         label: const Text('Work'),
       ),
@@ -161,8 +192,9 @@ class _WorkFormResult {
 }
 
 class _WorkFormDialog extends StatefulWidget {
-  const _WorkFormDialog({required this.subjects});
+  const _WorkFormDialog({required this.subjects, this.existing});
   final List<Subject> subjects;
+  final SchoolWork? existing;
 
   @override
   State<_WorkFormDialog> createState() => _WorkFormDialogState();
@@ -170,12 +202,24 @@ class _WorkFormDialog extends StatefulWidget {
 
 class _WorkFormDialogState extends State<_WorkFormDialog> {
   final _formKey = GlobalKey<FormState>();
-  final _title = TextEditingController();
-  final _notes = TextEditingController();
-  int? _subjectId;
-  String _type = 'assignment';
-  String _priority = 'medium';
-  DateTime? _dueAt;
+  late final TextEditingController _title;
+  late final TextEditingController _notes;
+  late int? _subjectId;
+  late String _type;
+  late String _priority;
+  late DateTime? _dueAt;
+
+  @override
+  void initState() {
+    super.initState();
+    final e = widget.existing;
+    _title = TextEditingController(text: e?.title ?? '');
+    _notes = TextEditingController(text: e?.notes ?? '');
+    _subjectId = e?.subjectId;
+    _type = e?.type ?? 'assignment';
+    _priority = e?.priority ?? 'medium';
+    _dueAt = e?.dueAt;
+  }
 
   @override
   void dispose() {
@@ -219,7 +263,7 @@ class _WorkFormDialogState extends State<_WorkFormDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Add school work'),
+      title: Text(widget.existing == null ? 'Add school work' : 'Edit school work'),
       content: SingleChildScrollView(
         child: Form(
           key: _formKey,

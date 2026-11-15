@@ -21,16 +21,31 @@ class ApiException implements Exception {
 class ApiClient {
   ApiClient({http.Client? client, String? baseUrl})
       : _client = client ?? http.Client(),
-        _baseUrl = baseUrl ?? AppConfig.apiBaseUrl;
+        _baseUrl = _clean(baseUrl);
 
   final http.Client _client;
-  final String _baseUrl;
+  String? _baseUrl;
+
+  /// Effective base URL (runtime override when set, build-time default otherwise).
+  String get baseUrl => _baseUrl ?? AppConfig.apiBaseUrl;
+
+  set baseUrl(String? value) => _baseUrl = _clean(value);
 
   String? token;
 
+  static String? _clean(String? value) {
+    final trimmed = value?.trim();
+    if (trimmed == null || trimmed.isEmpty) return null;
+    return trimmed.replaceFirst(RegExp(r'/+$'), '');
+  }
+
+  Map<String, String> get _authHeaders => {
+        if (token != null) 'Authorization': 'Bearer $token',
+      };
+
   Map<String, String> get _headers => {
         'Content-Type': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token',
+        ..._authHeaders,
       };
 
   Uri _uri(String path, [Map<String, dynamic>? query]) {
@@ -38,8 +53,30 @@ class ApiClient {
     query?.forEach((key, value) {
       if (value != null && '$value'.isNotEmpty) params[key] = '$value';
     });
-    return Uri.parse('$_baseUrl$path')
+    return Uri.parse('$baseUrl$path')
         .replace(queryParameters: params.isEmpty ? null : params);
+  }
+
+  dynamic _decode(http.Response response) {
+    if (response.body.isEmpty) return null;
+    try {
+      return jsonDecode(response.body);
+    } on FormatException {
+      return null;
+    }
+  }
+
+  Never _throwFor(http.Response response) {
+    final decoded = _decode(response);
+    final error = decoded is Map<String, dynamic> ? decoded['error'] : null;
+    if (error is Map<String, dynamic>) {
+      throw ApiException(
+        response.statusCode,
+        error['message']?.toString() ?? 'Request failed',
+        (error['details'] as List?) ?? const [],
+      );
+    }
+    throw ApiException(response.statusCode, 'Request failed (${response.statusCode})');
   }
 
   Future<dynamic> _send(
@@ -72,18 +109,10 @@ class ApiClient {
         throw ArgumentError('Unsupported method $method');
     }
 
-    final decoded = response.body.isEmpty ? null : jsonDecode(response.body);
-    if (response.statusCode >= 200 && response.statusCode < 300) return decoded;
-
-    final error = decoded is Map<String, dynamic> ? decoded['error'] : null;
-    if (error is Map<String, dynamic>) {
-      throw ApiException(
-        response.statusCode,
-        error['message']?.toString() ?? 'Request failed',
-        (error['details'] as List?) ?? const [],
-      );
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return _decode(response);
     }
-    throw ApiException(response.statusCode, 'Request failed (${response.statusCode})');
+    _throwFor(response);
   }
 
   Future<dynamic> get(String path, {Map<String, dynamic>? query}) =>
@@ -92,4 +121,52 @@ class ApiClient {
   Future<dynamic> put(String path, {Object? body}) => _send('PUT', path, body: body);
   Future<dynamic> patch(String path, {Object? body}) => _send('PATCH', path, body: body);
   Future<dynamic> delete(String path) => _send('DELETE', path);
+
+  /// Downloads a binary payload (attachment contents).
+  Future<List<int>> getBytes(String path) async {
+    final response = await _client.get(_uri(path), headers: _authHeaders);
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return response.bodyBytes;
+    }
+    _throwFor(response);
+  }
+
+  /// Uploads one file as `multipart/form-data` using [field] (default `file`).
+  Future<dynamic> postMultipart(
+    String path, {
+    required String filePath,
+    required String fileName,
+    String field = 'file',
+  }) async {
+    return _sendMultipart(
+      path,
+      await http.MultipartFile.fromPath(field, filePath, filename: fileName),
+    );
+  }
+
+  /// Uploads in-memory bytes (used for Android `content://` picks).
+  Future<dynamic> postMultipartBytes(
+    String path, {
+    required List<int> bytes,
+    required String fileName,
+    String field = 'file',
+  }) async {
+    return _sendMultipart(
+      path,
+      http.MultipartFile.fromBytes(field, bytes, filename: fileName),
+    );
+  }
+
+  Future<dynamic> _sendMultipart(String path, http.MultipartFile file) async {
+    final request = http.MultipartRequest('POST', _uri(path))
+      ..headers.addAll(_authHeaders)
+      ..files.add(file);
+
+    final streamed = await _client.send(request);
+    final response = await http.Response.fromStream(streamed);
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return _decode(response);
+    }
+    _throwFor(response);
+  }
 }

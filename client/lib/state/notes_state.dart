@@ -48,9 +48,15 @@ class NotesState extends ChangeNotifier {
     }
   }
 
-  Future<Note?> create({String? title, String? content, String? color, String? tags}) async {
+  Future<Note?> create({String? title, String? content, String? color, String? tags, int? subjectId}) async {
     try {
-      final note = await _api.createNote(title: title, content: content, color: color, tags: tags);
+      final note = await _api.createNote(
+        title: title,
+        content: content,
+        color: color,
+        tags: tags,
+        subjectId: subjectId,
+      );
       _notes.insert(0, note);
       notifyListeners();
       return note;
@@ -63,7 +69,16 @@ class NotesState extends ChangeNotifier {
 
   Future<bool> update(Note note) async {
     try {
-      final updated = await _api.updateNote(note.id, title: note.title, content: note.content, isPinned: note.isPinned, color: note.color, tags: note.tags);
+      final updated = await _api.updateNote(
+        note.id,
+        title: note.title,
+        content: note.content,
+        isPinned: note.isPinned,
+        color: note.color,
+        tags: note.tags,
+        subjectId: note.subjectId,
+        clearSubject: note.subjectId == null,
+      );
       final idx = _notes.indexWhere((n) => n.id == note.id);
       if (idx >= 0) {
         _notes[idx] = updated;
@@ -99,6 +114,13 @@ class NotesState extends ChangeNotifier {
       notifyListeners();
       return false;
     }
+  }
+
+  void reset() {
+    _notes = [];
+    _search = '';
+    _error = null;
+    notifyListeners();
   }
 
   Future<bool> delete(Note note) async {
