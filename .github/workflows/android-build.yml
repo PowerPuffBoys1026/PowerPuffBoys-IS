@@ -1,0 +1,83 @@
+name: Android build
+
+on:
+  push:
+    branches: [main, "feat/**", "feature/**"]
+    paths:
+      - "client/**"
+      - ".github/workflows/android-build.yml"
+  pull_request:
+    paths:
+      - "client/**"
+      - ".github/workflows/android-build.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build release APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    defaults:
+      run:
+        working-directory: client
+
+    env:
+      # GitHub does not allow secrets directly in `if:`. Expose a boolean instead.
+      HAS_KEYSTORE: ${{ secrets.KEYSTORE_BASE64 != '' }}
+      API_BASE_URL: ${{ vars.API_BASE_URL || 'http://192.168.1.24:3000/api' }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.47.7"
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Test
+        run: flutter test
+
+      - name: Decode keystore
+        if: env.HAS_KEYSTORE == 'true'
+        working-directory: client/android
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          printf '%s' "$KEYSTORE_BASE64" | base64 -d > app/release.jks
+          cat > key.properties <<EOF
+          storeFile=release.jks
+          storePassword=$KEYSTORE_PASSWORD
+          keyAlias=$KEY_ALIAS
+          keyPassword=$KEY_PASSWORD
+          EOF
+
+      - name: Build release APK
+        run: >
+          flutter build apk --release
+          --dart-define=API_BASE_URL=$API_BASE_URL
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: classmate-v2-apk
+          path: client/build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
