@@ -2,7 +2,7 @@
 
 > Implementation record for Phase 1 of the plan in [`ANDROID.md`](ANDROID.md).
 >
-> **Status:** Complete — awaiting the first CI run.
+> **Status:** Complete — CI APK build green (run `43724990247`, 5m 29s).
 > **Branch:** `feature/android-v2` (based on `a673846`)
 > **Date:** 2026-11-15
 
@@ -228,7 +228,8 @@ adb shell dumpsys package com.powerpuffboys.classmate |
 | Check | Command | Result |
 |---|---|---|
 | Dependency resolution | `flutter pub get` | Passed |
-| Static analysis | `flutter analyze` | 0 errors; 7 pre-existing `use_null_aware_elements` **info** lints in `lib/api/api.dart:213-228` |
+| Static analysis | `flutter analyze` | 0 errors; 7 pre-existing `use_null_aware_elements` **info** lints (cleared in the CI fix commit) |
+| CI APK build | GitHub Actions run `43724990247` | Success (5m 29s); artifact `classmate-v2-apk` |
 | Unit tests | `flutter test` | 5/5 passed |
 | Workflow YAML | `yaml valid` (npm `yaml@2`) | Exit 0 |
 | Gradle wrapper | inspected `gradle_utils.dart` + `gradle-wrapper.properties` | Injection confirmed; Gradle 9.3.1 |
@@ -239,7 +240,8 @@ adb shell dumpsys package com.powerpuffboys.classmate |
 they are regenerated during builds.
 
 No APK was built locally: the minimal profile intentionally has no JDK or Android
-SDK. The first CI run is the APK verification.
+SDK. The first CI run (`43724990247`) built and uploaded the installable artifact
+in 5m 29s, validating the Kotlin DSL signing block via the debug fallback path.
 
 ---
 
@@ -251,9 +253,10 @@ SDK. The first CI run is the APK verification.
   demo, not publishable.
 - Cleartext HTTP remains enabled for the LAN demo.
 - The launcher icon is still the Flutter default.
-- Nothing has been committed or pushed; no CI run exists yet.
-- `flutter build apk` was not executed locally, so the Kotlin DSL signing block is
-  validated by inspection only until CI runs.
+- The first analyzer result made CI red because `flutter analyze` exits non-zero on
+  info diagnostics; the workflow now uses `--no-fatal-infos` and the lints are fixed.
+- No release keystore is configured yet, so the CI artifact is debug-signed.
+- `flutter build apk` still has not been executed locally; CI is the build path.
 
 ---
 
@@ -268,7 +271,7 @@ SDK. The first CI run is the APK verification.
 - [x] `flutter analyze` and `flutter test` green
 - [x] Workflow YAML validates
 - [ ] Repository secrets and `API_BASE_URL` configured
-- [ ] First workflow run green
+- [x] First workflow run green
 - [ ] APK installs; launcher shows `ClassMate`
 - [ ] `versionName=2.0.0`, `versionCode=2`
 - [ ] APK reaches `/api/health` at the configured URL

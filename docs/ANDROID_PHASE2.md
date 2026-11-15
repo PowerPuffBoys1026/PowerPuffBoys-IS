@@ -104,7 +104,7 @@ immediately, so login/register/in-app refresh use the new host without a rebuild
 
 ```
 cd client
-flutter analyze     # 0 errors, 9 info lints (use_null_aware_elements, style only)
+flutter analyze     # No issues found
 flutter test        # 21 tests, all pass
 ```
 
@@ -124,8 +124,8 @@ fields, and all `normalizeServerUrl` branches.
   Android device during Phase 4 (first write/read after install).
 - `AppState.error`/`AuthState.error` now print the effective base URL, which helps
   when the LAN address is wrong.
-- Existing `use_null_aware_elements` info lints remain (repo style predates the
-  lint; non-fatal).
+- The `use_null_aware_elements` infos were cleared in the CI fix commit; CI runs
+  Analyze with `--no-fatal-infos` so future style infos do not fail the build.
 
 ---
 

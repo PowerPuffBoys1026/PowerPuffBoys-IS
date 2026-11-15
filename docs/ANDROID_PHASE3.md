@@ -1,6 +1,6 @@
 # ClassMate v2 — Phase 3: UI Parity
 
-**Status:** implemented; `flutter analyze` 0 errors/warnings, 21/21 tests pass.
+**Status:** implemented; `flutter analyze` clean, 21/21 tests pass, CI APK built.
 **Branch:** `feature/android-v2`
 **Scope:** Flutter client UI only. No device run yet (Phase 4).
 
@@ -82,9 +82,12 @@ Android notes:
 
 ```
 cd client
-flutter analyze   # 0 errors, 0 warnings, 9 info (use_null_aware_elements, style)
+flutter analyze   # No issues found
 flutter test      # 21/21 pass
 ```
+
+CI: run `43724990247` — **Success** in 5m 29s; artifact `classmate-v2-apk`
+(`app-release.apk`, debug-signed until keystore secrets are added).
 
 Not verified yet:
 
@@ -109,8 +112,8 @@ Not verified yet:
 
 ## 9. Next phase (Phase 4)
 
-1. Commit + push the branch; let GitHub Actions produce the first APK.
-2. Install on a phone, start PostgreSQL + `npm start` on the laptop.
+1. Download `classmate-v2-apk` from run `43724990247`; sideload it.
+2. Start PostgreSQL + `npm start` on the laptop; point the app at the LAN URL.
 3. QA script: login, server URL switch, subject/slot extended fields, grade CRUD
    + GPA math, focus session log/stats, attachments upload/open/delete, recycle
    restore/purge, profile + password change, logout/login.

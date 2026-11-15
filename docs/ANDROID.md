@@ -4,7 +4,8 @@
 > client, talking to the ClassMate API on a LAN development laptop, with the APK
 > compiled in GitHub Actions.
 >
-> **Status:** Phase 1 — implemented, pending first CI run.
+> **Status:** Phases 1–3 implemented; CI APK build green (run `43724990247`).
+> Phase 4 (device QA) next.
 > **Last updated:** 2026-11-15.
 
 ---
