@@ -325,11 +325,11 @@ class Api {
   }) async {
     final body = <String, dynamic>{
       if (title != null && title.isNotEmpty) 'title': title,
-      if (content != null) 'content': content,
+      'content': ?content,
       if (isPinned) 'isPinned': isPinned,
-      if (color != null) 'color': color,
+      'color': ?color,
       if (tags != null && tags.isNotEmpty) 'tags': tags,
-      if (subjectId != null) 'subjectId': subjectId,
+      'subjectId': ?subjectId,
     };
     final res = await _client.post('/notes', body: body);
     return Note.fromJson(res['data'] as Map<String, dynamic>);
@@ -346,11 +346,11 @@ class Api {
     bool clearSubject = false,
   }) async {
     final body = <String, dynamic>{
-      if (title != null) 'title': title,
-      if (content != null) 'content': content,
-      if (isPinned != null) 'isPinned': isPinned,
-      if (color != null) 'color': color,
-      if (tags != null) 'tags': tags,
+      'title': ?title,
+      'content': ?content,
+      'isPinned': ?isPinned,
+      'color': ?color,
+      'tags': ?tags,
       if (clearSubject) 'subjectId': null,
       if (!clearSubject && subjectId != null) 'subjectId': subjectId,
     };
@@ -431,7 +431,7 @@ class Api {
     String? notes,
   }) async {
     final res = await _client.post('/study/sessions', body: {
-      if (subjectId != null) 'subjectId': subjectId,
+      'subjectId': ?subjectId,
       'durationMinutes': durationMinutes,
       'mode': mode,
       if (notes != null && notes.isNotEmpty) 'notes': notes,
