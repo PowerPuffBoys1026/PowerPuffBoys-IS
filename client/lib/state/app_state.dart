@@ -44,7 +44,8 @@ class AppState extends ChangeNotifier {
     } on ApiException catch (e) {
       error = e.message;
     } catch (e) {
-      error = 'Could not reach the server (${e.runtimeType}: $e). API: ${_api.baseUrl}';
+      error =
+          'Could not reach the server (${e.runtimeType}: $e). API: ${_api.baseUrl}';
     } finally {
       loading = false;
       notifyListeners();
@@ -188,6 +189,29 @@ class AppState extends ChangeNotifier {
   Future<void> removeAttendance(int id) async {
     await _api.deleteAttendance(id);
     await refreshAll();
+  }
+
+  /// Marks every class in [classes] present for [date] in one refresh cycle.
+  Future<int> markClassesPresent({
+    required String date,
+    required List<({int subjectId, int slotId})> classes,
+  }) async {
+    var marked = 0;
+    for (final item in classes) {
+      try {
+        await _api.markAttendance(
+          subjectId: item.subjectId,
+          slotId: item.slotId,
+          date: date,
+          status: 'present',
+        );
+        marked++;
+      } on ApiException {
+        // Skip classes that already have a record; keep marking the rest.
+      }
+    }
+    await refreshAll();
+    return marked;
   }
 
   // ---- School works --------------------------------------------------------

@@ -15,7 +15,8 @@ class AttendanceRecord {
   final String status;
   final String? note;
 
-  factory AttendanceRecord.fromJson(Map<String, dynamic> json) => AttendanceRecord(
+  factory AttendanceRecord.fromJson(Map<String, dynamic> json) =>
+      AttendanceRecord(
         id: json['id'] as int,
         subjectId: json['subjectId'] as int,
         slotId: (json['slotId'] as num?)?.toInt(),
@@ -38,6 +39,8 @@ class AttendanceSummary {
     required this.counted,
     this.attendanceRate,
     this.absenceRate,
+    this.safeMissesLeft = 0,
+    this.maxAllowedAbsences = 0,
     this.warning = false,
   });
 
@@ -52,9 +55,12 @@ class AttendanceSummary {
   final int counted;
   final double? attendanceRate;
   final double? absenceRate;
+  final int safeMissesLeft;
+  final int maxAllowedAbsences;
   final bool warning;
 
-  factory AttendanceSummary.fromJson(Map<String, dynamic> json) => AttendanceSummary(
+  factory AttendanceSummary.fromJson(Map<String, dynamic> json) =>
+      AttendanceSummary(
         subjectId: json['subjectId'] as int,
         code: json['code'] as String,
         title: json['title'] as String,
@@ -66,6 +72,8 @@ class AttendanceSummary {
         counted: (json['counted'] as num?)?.toInt() ?? 0,
         attendanceRate: (json['attendanceRate'] as num?)?.toDouble(),
         absenceRate: (json['absenceRate'] as num?)?.toDouble(),
+        safeMissesLeft: (json['safeMissesLeft'] as num?)?.toInt() ?? 0,
+        maxAllowedAbsences: (json['maxAllowedAbsences'] as num?)?.toInt() ?? 0,
         warning: json['warning'] as bool? ?? false,
       );
 }

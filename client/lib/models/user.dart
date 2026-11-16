@@ -18,12 +18,12 @@ class User {
   final String? createdAt;
 
   factory User.fromJson(Map<String, dynamic> json) => User(
-        id: json['id'] as int,
-        email: json['email'] as String,
-        fullName: json['fullName'] as String,
-        studentNo: json['studentNo'] as String?,
-        course: json['course'] as String?,
-        yearLevel: json['yearLevel'] as String?,
-        createdAt: json['createdAt'] as String?,
-      );
+    id: json['id'] as int,
+    email: json['email'] as String,
+    fullName: json['fullName'] as String,
+    studentNo: json['studentNo'] as String?,
+    course: json['course'] as String?,
+    yearLevel: json['yearLevel'] as String?,
+    createdAt: json['createdAt'] as String?,
+  );
 }

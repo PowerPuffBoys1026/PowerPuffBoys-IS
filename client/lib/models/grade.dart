@@ -27,16 +27,16 @@ class GradeComponent {
   bool get isGraded => scorePct != null;
 
   factory GradeComponent.fromJson(Map<String, dynamic> json) => GradeComponent(
-        id: asInt(json['id']) ?? 0,
-        subjectId: asInt(json['subjectId']) ?? 0,
-        subjectCode: json['subjectCode'] as String?,
-        subjectTitle: json['subjectTitle'] as String?,
-        componentName: json['componentName'] as String? ?? 'Component',
-        weightPct: asDouble(json['weightPct']) ?? 0,
-        scorePct: asDouble(json['scorePct']),
-        targetPct: asDouble(json['targetPct']) ?? 85,
-        createdAt: json['createdAt'] as String?,
-      );
+    id: asInt(json['id']) ?? 0,
+    subjectId: asInt(json['subjectId']) ?? 0,
+    subjectCode: json['subjectCode'] as String?,
+    subjectTitle: json['subjectTitle'] as String?,
+    componentName: json['componentName'] as String? ?? 'Component',
+    weightPct: asDouble(json['weightPct']) ?? 0,
+    scorePct: asDouble(json['scorePct']),
+    targetPct: asDouble(json['targetPct']) ?? 85,
+    createdAt: json['createdAt'] as String?,
+  );
 }
 
 /// A component nested inside `GET /grades/summary` (no subject fields).
@@ -55,7 +55,8 @@ class GradeSummaryComponent {
   final double? scorePct;
   final double targetPct;
 
-  factory GradeSummaryComponent.fromJson(Map<String, dynamic> json) => GradeSummaryComponent(
+  factory GradeSummaryComponent.fromJson(Map<String, dynamic> json) =>
+      GradeSummaryComponent(
         id: asInt(json['id']) ?? 0,
         componentName: json['componentName'] as String? ?? 'Component',
         weightPct: asDouble(json['weightPct']) ?? 0,
@@ -96,7 +97,8 @@ class SubjectGradeSummary {
   final double? neededOnRemaining;
   final List<GradeSummaryComponent> components;
 
-  factory SubjectGradeSummary.fromJson(Map<String, dynamic> json) => SubjectGradeSummary(
+  factory SubjectGradeSummary.fromJson(Map<String, dynamic> json) =>
+      SubjectGradeSummary(
         subjectId: asInt(json['subjectId']) ?? 0,
         code: json['code'] as String? ?? '',
         title: json['title'] as String? ?? '',
@@ -110,7 +112,9 @@ class SubjectGradeSummary {
         remainingWeight: asDouble(json['remainingWeight']) ?? 0,
         neededOnRemaining: asDouble(json['neededOnRemaining']),
         components: (json['components'] as List? ?? const [])
-            .map((e) => GradeSummaryComponent.fromJson(e as Map<String, dynamic>))
+            .map(
+              (e) => GradeSummaryComponent.fromJson(e as Map<String, dynamic>),
+            )
             .toList(),
       );
 }
@@ -130,11 +134,11 @@ class GradeSummary {
   final List<SubjectGradeSummary> subjects;
 
   factory GradeSummary.fromJson(Map<String, dynamic> json) => GradeSummary(
-        cumulativeGpa: asDouble(json['cumulativeGpa']),
-        academicStanding: json['academicStanding'] as String? ?? 'On Track',
-        totalUnitsCounted: asInt(json['totalUnitsCounted']) ?? 0,
-        subjects: (json['subjects'] as List? ?? const [])
-            .map((e) => SubjectGradeSummary.fromJson(e as Map<String, dynamic>))
-            .toList(),
-      );
+    cumulativeGpa: asDouble(json['cumulativeGpa']),
+    academicStanding: json['academicStanding'] as String? ?? 'On Track',
+    totalUnitsCounted: asInt(json['totalUnitsCounted']) ?? 0,
+    subjects: (json['subjects'] as List? ?? const [])
+        .map((e) => SubjectGradeSummary.fromJson(e as Map<String, dynamic>))
+        .toList(),
+  );
 }

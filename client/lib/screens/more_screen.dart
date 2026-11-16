@@ -29,7 +29,9 @@ class MoreScreen extends StatelessWidget {
           child: ListTile(
             leading: CircleAvatar(
               child: Text(
-                (user?.fullName.isNotEmpty ?? false) ? user!.fullName[0].toUpperCase() : '?',
+                (user?.fullName.isNotEmpty ?? false)
+                    ? user!.fullName[0].toUpperCase()
+                    : '?',
               ),
             ),
             title: Text(user?.fullName ?? 'Signed in'),
@@ -81,7 +83,10 @@ class MoreScreen extends StatelessWidget {
         const SizedBox(height: 16),
         Card(
           child: ListTile(
-            leading: Icon(Icons.logout, color: Theme.of(context).colorScheme.error),
+            leading: Icon(
+              Icons.logout,
+              color: Theme.of(context).colorScheme.error,
+            ),
             title: const Text('Sign out'),
             onTap: () => context.read<AuthState>().logout(),
           ),

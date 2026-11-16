@@ -24,16 +24,16 @@ class DashboardClass {
   final String? modality;
 
   factory DashboardClass.fromJson(Map<String, dynamic> json) => DashboardClass(
-        slotId: json['slotId'] as int,
-        subjectId: json['subjectId'] as int,
-        code: json['code'] as String,
-        title: json['title'] as String,
-        color: json['color'] as String? ?? '#4F46E5',
-        startTime: json['startTime'] as String,
-        endTime: json['endTime'] as String,
-        room: json['room'] as String?,
-        modality: json['modality'] as String?,
-      );
+    slotId: json['slotId'] as int,
+    subjectId: json['subjectId'] as int,
+    code: json['code'] as String,
+    title: json['title'] as String,
+    color: json['color'] as String? ?? '#4F46E5',
+    startTime: json['startTime'] as String,
+    endTime: json['endTime'] as String,
+    room: json['room'] as String?,
+    modality: json['modality'] as String?,
+  );
 }
 
 class DueSoonWork {
@@ -60,16 +60,18 @@ class DueSoonWork {
   final bool overdue;
 
   factory DueSoonWork.fromJson(Map<String, dynamic> json) => DueSoonWork(
-        id: json['id'] as int,
-        title: json['title'] as String,
-        type: json['type'] as String? ?? 'assignment',
-        dueAt: json['dueAt'] != null ? DateTime.tryParse(json['dueAt'] as String)?.toLocal() : null,
-        priority: json['priority'] as String? ?? 'medium',
-        status: json['status'] as String? ?? 'todo',
-        subjectCode: json['subjectCode'] as String?,
-        color: json['color'] as String?,
-        overdue: json['overdue'] as bool? ?? false,
-      );
+    id: json['id'] as int,
+    title: json['title'] as String,
+    type: json['type'] as String? ?? 'assignment',
+    dueAt: json['dueAt'] != null
+        ? DateTime.tryParse(json['dueAt'] as String)?.toLocal()
+        : null,
+    priority: json['priority'] as String? ?? 'medium',
+    status: json['status'] as String? ?? 'todo',
+    subjectCode: json['subjectCode'] as String?,
+    color: json['color'] as String?,
+    overdue: json['overdue'] as bool? ?? false,
+  );
 }
 
 class DashboardData {

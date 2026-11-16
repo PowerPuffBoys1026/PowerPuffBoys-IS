@@ -21,6 +21,15 @@ void main() {
       expect(dueLabel(DateTime(2026, 10, 10), now: now), 'Overdue by 2 days');
     });
 
+    test('formatDate renders readable dates', () {
+      expect(formatDate('2026-11-15T10:30:00'), 'November 15, 2026');
+      expect(
+        formatDate('2026-11-15T22:05:00', withTime: true),
+        'November 15, 2026 · 10:05 PM',
+      );
+      expect(formatDate('not-a-date'), 'not-a-date');
+    });
+
     test('hexToColor parses and falls back', () {
       expect(hexToColor('#4F46E5').toARGB32(), 0xFF4F46E5);
       expect(hexToColor('nope').toARGB32(), 0xFF4F46E5);
@@ -56,11 +65,11 @@ void main() {
               'color': '#4F46E5',
               'startTime': '08:00',
               'endTime': '09:30',
-            }
+            },
           ],
           'dueSoon': [],
           'attendanceWarnings': [],
-        }
+        },
       });
       expect(dashboard.dayName, 'Monday');
       expect(dashboard.classes.single.code, 'CS101');

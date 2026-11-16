@@ -1,15 +1,26 @@
 import 'dart:math' as math;
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
+import '../theme.dart';
+
+/// Ambient background used behind the auth flow and the signed-in shell.
+///
+/// The v2 dashboard keeps a calm field-journal backdrop, so the orbs are very
+/// subtle in dark mode and almost invisible in light mode.
 class AnimatedGlassBackground extends StatefulWidget {
-  const AnimatedGlassBackground({super.key, required this.child});
+  const AnimatedGlassBackground({
+    super.key,
+    required this.child,
+    this.intense = false,
+  });
 
   final Widget child;
+  final bool intense;
 
   @override
-  State<AnimatedGlassBackground> createState() => _AnimatedGlassBackgroundState();
+  State<AnimatedGlassBackground> createState() =>
+      _AnimatedGlassBackgroundState();
 }
 
 class _AnimatedGlassBackgroundState extends State<AnimatedGlassBackground>
@@ -21,7 +32,7 @@ class _AnimatedGlassBackgroundState extends State<AnimatedGlassBackground>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 18),
+      duration: const Duration(seconds: 22),
     )..repeat(reverse: true);
   }
 
@@ -33,76 +44,66 @@ class _AnimatedGlassBackgroundState extends State<AnimatedGlassBackground>
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
+    final strength = widget.intense ? 1.0 : 0.45;
     return Stack(
       children: [
-        Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF0C1215),
-                Color(0xFF131E21),
-                Color(0xFF182528),
-              ],
+        Positioned.fill(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  colors.bgPrimary,
+                  colors.bgSecondary,
+                  colors.bgPrimary,
+                ],
+              ),
             ),
           ),
         ),
-        AnimatedBuilder(
-          animation: _controller,
-          builder: (context, _) {
-            final t = _controller.value;
-            final dx1 = math.sin(t * math.pi) * 40;
-            final dy1 = math.cos(t * math.pi) * 30;
-            final dx2 = math.cos(t * math.pi * 0.7) * 60;
-            final dy2 = math.sin(t * math.pi * 0.7) * 40;
-            final dx3 = math.sin(t * math.pi * 0.5) * 50;
-            final dy3 = math.cos(t * math.pi * 0.5) * 35;
-
-            return Stack(
-              children: [
-                Positioned(
-                  top: 120 + dy1,
-                  left: -80 + dx1,
-                  child: _Orb(
-                    size: 320,
-                    colors: [
-                      const Color(0xFFA51C30).withValues(alpha: 0.22),
-                      const Color(0xFFA51C30).withValues(alpha: 0.04),
-                    ],
-                  ),
-                ),
-                Positioned(
-                  top: -160 + dy2,
-                  right: -140 + dx2,
-                  child: _Orb(
-                    size: 380,
-                    colors: [
-                      const Color(0xFF53C99A).withValues(alpha: 0.12),
-                      const Color(0xFF53C99A).withValues(alpha: 0.03),
-                    ],
-                  ),
-                ),
-                Positioned(
-                  bottom: -200 + dy3,
-                  left: 40 + dx3,
-                  child: _Orb(
-                    size: 420,
-                    colors: [
-                      const Color(0xFF78858B).withValues(alpha: 0.14),
-                      const Color(0xFF78858B).withValues(alpha: 0.03),
-                    ],
-                  ),
-                ),
-                BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
-                  child: Container(
-                    color: Colors.transparent,
-                  ),
-                ),
-              ],
-            );
-          },
+        Positioned.fill(
+          child: IgnorePointer(
+            child: AnimatedBuilder(
+              animation: _controller,
+              builder: (context, _) {
+                final t = _controller.value;
+                final dx = math.sin(t * math.pi) * 50;
+                final dy = math.cos(t * math.pi) * 40;
+                return Stack(
+                  children: [
+                    Positioned(
+                      top: 90 + dy,
+                      left: -100 + dx,
+                      child: _Orb(
+                        size: 420,
+                        color: colors.primary.withValues(
+                          alpha: 0.16 * strength,
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: -180 - dy,
+                      right: -120 - dx,
+                      child: _Orb(
+                        size: 440,
+                        color: colors.emerald.withValues(alpha: 0.1 * strength),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: -220 + dx,
+                      left: 40 + dy,
+                      child: _Orb(
+                        size: 460,
+                        color: colors.violet.withValues(alpha: 0.13 * strength),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
         ),
         widget.child,
       ],
@@ -111,10 +112,10 @@ class _AnimatedGlassBackgroundState extends State<AnimatedGlassBackground>
 }
 
 class _Orb extends StatelessWidget {
-  const _Orb({required this.size, required this.colors});
+  const _Orb({required this.size, required this.color});
 
   final double size;
-  final List<Color> colors;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
@@ -123,9 +124,7 @@ class _Orb extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: RadialGradient(
-          colors: colors,
-        ),
+        gradient: RadialGradient(colors: [color, color.withValues(alpha: 0)]),
       ),
     );
   }

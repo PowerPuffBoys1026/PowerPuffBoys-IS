@@ -4,7 +4,9 @@ import 'package:provider/provider.dart';
 import '../api/api_client.dart';
 import '../models/subject.dart';
 import '../state/app_state.dart';
+import '../theme.dart';
 import '../utils/format.dart';
+import '../widgets/v2_kit.dart';
 
 class SubjectsScreen extends StatelessWidget {
   const SubjectsScreen({super.key});
@@ -40,21 +42,27 @@ class SubjectsScreen extends StatelessWidget {
         );
       }
     } on ApiException catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
-      }
+      if (context.mounted) _toast(context, e.message);
     }
   }
 
   Future<void> _confirmDelete(BuildContext context, Subject subject) async {
     final ok = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: Text('Delete ${subject.code}?'),
-        content: const Text('This also removes its schedule and attendance records.'),
+        content: const Text(
+          'This also removes its schedule and attendance records.',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete')),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Delete'),
+          ),
         ],
       ),
     );
@@ -62,52 +70,233 @@ class SubjectsScreen extends StatelessWidget {
     try {
       await context.read<AppState>().removeSubject(subject.id);
     } on ApiException catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
-      }
+      if (context.mounted) _toast(context, e.message);
     }
+  }
+
+  static void _toast(BuildContext context, String message) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
   Widget build(BuildContext context) {
     final subjects = context.watch<AppState>().subjects;
+    final colors = context.colors;
+
     return Scaffold(
-      body: subjects.isEmpty
-          ? const Center(child: Text('No subjects yet. Tap + to add one.'))
-          : ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                for (final s in subjects)
-                  Card(
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: hexToColor(s.color),
-                        child: Text(s.code.isEmpty ? '?' : s.code[0], style: const TextStyle(color: Colors.white)),
-                      ),
-                      title: Text('${s.code} · ${s.title}'),
-                      isThreeLine: true,
-                      subtitle: Text(
-                        '${s.instructor ?? 'No instructor'} · ${s.units} units\n'
-                        '${s.instructorEmail ?? 'No email'} · ${s.officeHours ?? 'No office hours'}',
-                      ),
-                      trailing: PopupMenuButton<String>(
-                        onSelected: (value) {
-                          if (value == 'edit') _openForm(context, existing: s);
-                          if (value == 'delete') _confirmDelete(context, s);
-                        },
-                        itemBuilder: (_) => const [
-                          PopupMenuItem(value: 'edit', child: Text('Edit')),
-                          PopupMenuItem(value: 'delete', child: Text('Delete')),
-                        ],
-                      ),
+      backgroundColor: colors.bgPrimary,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text('Subjects'),
+        actions: [
+          IconButton(
+            tooltip: 'Add subject',
+            icon: const Icon(Icons.add),
+            onPressed: () => _openForm(context),
+          ),
+        ],
+      ),
+      body: RefreshIndicator(
+        onRefresh: context.read<AppState>().refreshAll,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
+          children: [
+            v2Centered(
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SectionHeading(
+                    title: 'Course catalogue',
+                    subtitle:
+                        '${subjects.length} enrolled · ${subjects.fold<int>(0, (sum, s) => sum + s.units)} units',
+                    trailing: PillButton(
+                      label: 'Add subject',
+                      icon: Icons.add,
+                      tone: colors.primary,
+                      dense: true,
+                      onPressed: () => _openForm(context),
                     ),
                   ),
-              ],
+                  const SizedBox(height: 14),
+                  if (subjects.isEmpty)
+                    V2Empty(
+                      icon: Icons.menu_book_outlined,
+                      title: 'No subjects yet',
+                      message: 'Add your courses to unlock timetables, attendance, and GPA tracking.',
+                    )
+                  else
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final two = constraints.maxWidth >= 760;
+                        final width = two
+                            ? (constraints.maxWidth - 10) / 2
+                            : constraints.maxWidth;
+                        return Wrap(
+                          spacing: 10,
+                          runSpacing: 10,
+                          children: [
+                            for (final subject in subjects)
+                              SizedBox(
+                                width: width,
+                                child: _SubjectCard(
+                                  subject: subject,
+                                  onEdit: () =>
+                                      _openForm(context, existing: subject),
+                                  onDelete: () =>
+                                      _confirmDelete(context, subject),
+                                ),
+                              ),
+                          ],
+                        );
+                      },
+                    ),
+                ],
+              ),
             ),
-      floatingActionButton: FloatingActionButton.extended(
+          ],
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
         onPressed: () => _openForm(context),
-        icon: const Icon(Icons.add),
-        label: const Text('Subject'),
+        tooltip: 'Add subject',
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+}
+
+class _SubjectCard extends StatelessWidget {
+  const _SubjectCard({
+    required this.subject,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  final Subject subject;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final color = hexToColor(subject.color);
+    return GlassCard(
+      padding: const EdgeInsets.all(14),
+      accent: color,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  subject.code.isEmpty ? '?' : subject.code[0],
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      subject.code,
+                      style: TextStyle(
+                        color: color,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    Text(
+                      subject.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w700,
+                        height: 1.25,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              V2Badge('${subject.units} units', color: color, dense: true),
+              PopupMenuButton<String>(
+                padding: EdgeInsets.zero,
+                icon: Icon(Icons.more_vert, size: 18, color: colors.textDim),
+                onSelected: (value) {
+                  if (value == 'edit') onEdit();
+                  if (value == 'delete') onDelete();
+                },
+                itemBuilder: (_) => const [
+                  PopupMenuItem(value: 'edit', child: Text('Edit')),
+                  PopupMenuItem(value: 'delete', child: Text('Delete')),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Container(height: 1, color: colors.border),
+          const SizedBox(height: 9),
+          _Meta(
+            icon: Icons.person_outline,
+            text: subject.instructor ?? 'No instructor',
+          ),
+          _Meta(
+            icon: Icons.mail_outline,
+            text: subject.instructorEmail ?? 'No email',
+          ),
+          _Meta(
+            icon: Icons.schedule,
+            text: subject.officeHours ?? 'No office hours',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Meta extends StatelessWidget {
+  const _Meta({required this.icon, required this.text});
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2.5),
+      child: Row(
+        children: [
+          Icon(icon, size: 13, color: colors.textDim),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: colors.textMuted, fontSize: 10.5),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -150,7 +339,14 @@ class _SubjectFormDialogState extends State<_SubjectFormDialog> {
   late final TextEditingController _units;
   late String _color;
 
-  static const _palette = ['#4F46E5', '#0EA5E9', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
+  static const _palette = [
+    '#A51C30',
+    '#C08A2E',
+    '#53C99A',
+    '#4C9FD6',
+    '#8B6BB8',
+    '#D45A68',
+  ];
 
   @override
   void initState() {
@@ -194,6 +390,7 @@ class _SubjectFormDialogState extends State<_SubjectFormDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return AlertDialog(
       title: Text(widget.existing == null ? 'Add subject' : 'Edit subject'),
       content: SingleChildScrollView(
@@ -204,13 +401,17 @@ class _SubjectFormDialogState extends State<_SubjectFormDialog> {
             children: [
               TextFormField(
                 controller: _code,
-                decoration: const InputDecoration(labelText: 'Code (e.g. CS101)'),
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                decoration: const InputDecoration(
+                  labelText: 'Code (e.g. CS101)',
+                ),
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? 'Required' : null,
               ),
               TextFormField(
                 controller: _title,
                 decoration: const InputDecoration(labelText: 'Title'),
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? 'Required' : null,
               ),
               TextFormField(
                 controller: _instructor,
@@ -219,7 +420,9 @@ class _SubjectFormDialogState extends State<_SubjectFormDialog> {
               TextFormField(
                 controller: _instructorEmail,
                 keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(labelText: 'Instructor email'),
+                decoration: const InputDecoration(
+                  labelText: 'Instructor email',
+                ),
               ),
               TextFormField(
                 controller: _officeHours,
@@ -244,7 +447,7 @@ class _SubjectFormDialogState extends State<_SubjectFormDialog> {
                           color: hexToColor(color),
                           shape: BoxShape.circle,
                           border: _color == color
-                              ? Border.all(color: Theme.of(context).colorScheme.onSurface, width: 3)
+                              ? Border.all(color: colors.textMain, width: 3)
                               : null,
                         ),
                       ),
@@ -256,7 +459,10 @@ class _SubjectFormDialogState extends State<_SubjectFormDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
         FilledButton(onPressed: _save, child: const Text('Save')),
       ],
     );

@@ -47,13 +47,15 @@ class AuthState extends ChangeNotifier {
     String? studentNo,
     String? course,
   }) {
-    return _run(() => _api.register(
-          email: email,
-          password: password,
-          fullName: fullName,
-          studentNo: studentNo,
-          course: course,
-        ));
+    return _run(
+      () => _api.register(
+        email: email,
+        password: password,
+        fullName: fullName,
+        studentNo: studentNo,
+        course: course,
+      ),
+    );
   }
 
   Future<bool> _run(Future<AuthResult> Function() action) async {
@@ -71,7 +73,8 @@ class AuthState extends ChangeNotifier {
       error = e.message;
       return false;
     } catch (e) {
-      error = 'Could not reach the server (${e.runtimeType}: $e). API: ${_api.baseUrl}';
+      error =
+          'Could not reach the server (${e.runtimeType}: $e). API: ${_api.baseUrl}';
       return false;
     } finally {
       busy = false;
@@ -100,7 +103,8 @@ class AuthState extends ChangeNotifier {
       error = e.message;
       return false;
     } catch (e) {
-      error = 'Could not reach the server (${e.runtimeType}: $e). API: ${_api.baseUrl}';
+      error =
+          'Could not reach the server (${e.runtimeType}: $e). API: ${_api.baseUrl}';
       return false;
     } finally {
       busy = false;
@@ -125,7 +129,8 @@ class AuthState extends ChangeNotifier {
       error = e.message;
       return false;
     } catch (e) {
-      error = 'Could not reach the server (${e.runtimeType}: $e). API: ${_api.baseUrl}';
+      error =
+          'Could not reach the server (${e.runtimeType}: $e). API: ${_api.baseUrl}';
       return false;
     } finally {
       busy = false;

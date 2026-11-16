@@ -17,7 +17,8 @@ class NotesState extends ChangeNotifier {
     if (_search.isEmpty) return _notes;
     final q = _search.toLowerCase();
     return _notes.where((n) {
-      return n.title.toLowerCase().contains(q) || n.content.toLowerCase().contains(q);
+      return n.title.toLowerCase().contains(q) ||
+          n.content.toLowerCase().contains(q);
     }).toList();
   }
 
@@ -48,7 +49,13 @@ class NotesState extends ChangeNotifier {
     }
   }
 
-  Future<Note?> create({String? title, String? content, String? color, String? tags, int? subjectId}) async {
+  Future<Note?> create({
+    String? title,
+    String? content,
+    String? color,
+    String? tags,
+    int? subjectId,
+  }) async {
     try {
       final note = await _api.createNote(
         title: title,

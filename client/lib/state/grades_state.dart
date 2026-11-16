@@ -30,10 +30,7 @@ class GradesState extends ChangeNotifier {
     error = null;
     notifyListeners();
     try {
-      final results = await Future.wait([
-        _api.grades(),
-        _api.gradeSummary(),
-      ]);
+      final results = await Future.wait([_api.grades(), _api.gradeSummary()]);
       grades = results[0] as List<GradeComponent>;
       summary = results[1] as GradeSummary;
     } on ApiException catch (e) {

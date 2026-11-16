@@ -1,4 +1,5 @@
 import 'package:classmate/models/attachment.dart';
+import 'package:classmate/models/attendance.dart';
 import 'package:classmate/models/grade.dart';
 import 'package:classmate/models/note.dart';
 import 'package:classmate/models/recycle_bin_item.dart';
@@ -64,7 +65,13 @@ void main() {
             'remainingWeight': 70,
             'neededOnRemaining': 90.7,
             'components': [
-              {'id': 5, 'componentName': 'Midterm', 'weightPct': 30, 'scorePct': 88.5, 'targetPct': 90},
+              {
+                'id': 5,
+                'componentName': 'Midterm',
+                'weightPct': 30,
+                'scorePct': 88.5,
+                'targetPct': 90,
+              },
             ],
           },
         ],
@@ -151,7 +158,11 @@ void main() {
       expect(item.label, 'Chapter 1');
       expect(item.expiresAt, isNotNull);
 
-      final restored = RestoreResult.fromJson({'id': 12, 'type': 'note', 'label': 'Chapter 1'});
+      final restored = RestoreResult.fromJson({
+        'id': 12,
+        'type': 'note',
+        'label': 'Chapter 1',
+      });
       expect(restored.id, 12);
       expect(restored.label, 'Chapter 1');
     });
@@ -220,6 +231,46 @@ void main() {
     });
   });
 
+  group('attendance summary', () {
+    test('parses safe-cut fields and warning', () {
+      final summary = AttendanceSummary.fromJson({
+        'subjectId': 3,
+        'code': 'CS101',
+        'title': 'Intro',
+        'color': '#A51C30',
+        'present': 8,
+        'absent': 2,
+        'late': 1,
+        'cancelled': 0,
+        'counted': 11,
+        'attendanceRate': 81.8,
+        'absenceRate': 18.2,
+        'safeMissesLeft': 0,
+        'maxAllowedAbsences': 2,
+        'warning': true,
+      });
+
+      expect(summary.safeMissesLeft, 0);
+      expect(summary.maxAllowedAbsences, 2);
+      expect(summary.warning, isTrue);
+      expect(summary.attendanceRate, closeTo(81.8, 0.01));
+    });
+
+    test('defaults missing safe-cut fields to zero', () {
+      final summary = AttendanceSummary.fromJson({
+        'subjectId': 1,
+        'code': 'GE1',
+        'title': 'Ethics',
+        'present': 0,
+        'counted': 0,
+      });
+      expect(summary.safeMissesLeft, 0);
+      expect(summary.maxAllowedAbsences, 0);
+      expect(summary.warning, isFalse);
+      expect(summary.color, '#4F46E5');
+    });
+  });
+
   group('SettingsState.normalizeServerUrl', () {
     test('keeps existing /api path', () {
       expect(
@@ -250,9 +301,18 @@ void main() {
     });
 
     test('rejects empty and non-http schemes', () {
-      expect(() => SettingsState.normalizeServerUrl('   '), throwsFormatException);
-      expect(() => SettingsState.normalizeServerUrl('ftp://example.com'), throwsFormatException);
-      expect(() => SettingsState.normalizeServerUrl('http://'), throwsFormatException);
+      expect(
+        () => SettingsState.normalizeServerUrl('   '),
+        throwsFormatException,
+      );
+      expect(
+        () => SettingsState.normalizeServerUrl('ftp://example.com'),
+        throwsFormatException,
+      );
+      expect(
+        () => SettingsState.normalizeServerUrl('http://'),
+        throwsFormatException,
+      );
     });
   });
 }

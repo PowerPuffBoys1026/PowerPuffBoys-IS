@@ -11,6 +11,7 @@ import 'state/grades_state.dart';
 import 'state/notes_state.dart';
 import 'state/settings_state.dart';
 import 'state/study_state.dart';
+import 'state/theme_state.dart';
 import 'state/token_store.dart';
 import 'theme.dart';
 import 'widgets/animated_glass_background.dart';
@@ -20,16 +21,20 @@ Future<void> main() async {
   final client = ApiClient();
   final api = Api(client);
   final settings = SettingsState(client);
-  await settings.load();
-  runApp(ClassMateApp(
-    api: api,
-    auth: AuthState(api, TokenStore()),
-    appState: AppState(api),
-    notes: NotesState(api),
-    grades: GradesState(api),
-    study: StudyState(api),
-    settings: settings,
-  ));
+  final theme = ThemeState();
+  await Future.wait([settings.load(), theme.load()]);
+  runApp(
+    ClassMateApp(
+      api: api,
+      auth: AuthState(api, TokenStore()),
+      appState: AppState(api),
+      notes: NotesState(api),
+      grades: GradesState(api),
+      study: StudyState(api),
+      settings: settings,
+      themeState: theme,
+    ),
+  );
 }
 
 class ClassMateApp extends StatelessWidget {
@@ -42,6 +47,7 @@ class ClassMateApp extends StatelessWidget {
     required this.grades,
     required this.study,
     required this.settings,
+    required this.themeState,
   });
 
   final Api api;
@@ -51,6 +57,7 @@ class ClassMateApp extends StatelessWidget {
   final GradesState grades;
   final StudyState study;
   final SettingsState settings;
+  final ThemeState themeState;
 
   @override
   Widget build(BuildContext context) {
@@ -63,13 +70,17 @@ class ClassMateApp extends StatelessWidget {
         ChangeNotifierProvider<GradesState>.value(value: grades),
         ChangeNotifierProvider<StudyState>.value(value: study),
         ChangeNotifierProvider<SettingsState>.value(value: settings),
+        ChangeNotifierProvider<ThemeState>.value(value: themeState),
       ],
-      child: MaterialApp(
-        title: 'ClassMate',
-        debugShowCheckedModeBanner: false,
-        theme: buildTheme(),
-        themeMode: ThemeMode.dark,
-        home: const _Root(),
+      child: Consumer<ThemeState>(
+        builder: (context, theme, _) => MaterialApp(
+          title: 'ClassMate',
+          debugShowCheckedModeBanner: false,
+          theme: buildTheme(Brightness.light),
+          darkTheme: buildTheme(Brightness.dark),
+          themeMode: theme.themeMode,
+          home: const _Root(),
+        ),
       ),
     );
   }

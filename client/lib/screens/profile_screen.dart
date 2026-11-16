@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../state/auth_state.dart';
-import '../widgets/animated_glass_background.dart';
+import '../theme.dart';
+import '../utils/format.dart';
+import '../widgets/v2_kit.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -44,7 +46,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.dispose();
   }
 
-  String? _emptyToNull(String value) => value.trim().isEmpty ? null : value.trim();
+  String? _emptyToNull(String value) =>
+      value.trim().isEmpty ? null : value.trim();
 
   Future<void> _saveProfile() async {
     if (!_profileKey.currentState!.validate()) return;
@@ -56,9 +59,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       yearLevel: _emptyToNull(_yearLevel.text),
     );
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(ok ? 'Profile updated' : (auth.error ?? 'Could not update profile'))),
-    );
+    _toast(ok ? 'Profile updated' : (auth.error ?? 'Could not update profile'));
   }
 
   Future<void> _changePassword() async {
@@ -74,137 +75,236 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _newPassword.clear();
       _confirmPassword.clear();
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(ok ? 'Password changed' : (auth.error ?? 'Could not change password'))),
+    _toast(
+      ok ? 'Password changed' : (auth.error ?? 'Could not change password'),
     );
+  }
+
+  void _toast(String message) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthState>();
     final user = auth.user;
+    final colors = context.colors;
+    final initial = (user?.fullName.isNotEmpty ?? false)
+        ? user!.fullName[0].toUpperCase()
+        : '?';
 
-    return AnimatedGlassBackground(
-      child: Scaffold(
+    return Scaffold(
+      backgroundColor: colors.bgPrimary,
+      appBar: AppBar(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(title: const Text('Profile')),
-        body: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 28,
-                      child: Text(
-                        (user?.fullName.isNotEmpty ?? false) ? user!.fullName[0].toUpperCase() : '?',
-                        style: const TextStyle(fontSize: 22),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(user?.fullName ?? '', style: Theme.of(context).textTheme.titleMedium),
-                          Text(user?.email ?? '',
-                              style: Theme.of(context).textTheme.bodySmall),
-                          if (user?.createdAt != null)
-                            Text(
-                              'Joined ${user!.createdAt!.substring(0, 10)}',
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text('Account details', style: Theme.of(context).textTheme.titleSmall),
-            const SizedBox(height: 8),
-            Form(
-              key: _profileKey,
-              child: Column(
-                children: [
-                  TextFormField(
-                    controller: _fullName,
-                    decoration: const InputDecoration(labelText: 'Full name'),
-                    validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _studentNo,
-                    decoration: const InputDecoration(labelText: 'Student number'),
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _course,
-                    decoration: const InputDecoration(labelText: 'Course'),
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _yearLevel,
-                    decoration: const InputDecoration(labelText: 'Year level'),
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton(
-                      onPressed: auth.busy ? null : _saveProfile,
-                      child: const Text('Save profile'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text('Change password', style: Theme.of(context).textTheme.titleSmall),
-            const SizedBox(height: 8),
-            Form(
-              key: _passwordKey,
-              child: Column(
-                children: [
-                  TextFormField(
-                    controller: _currentPassword,
-                    obscureText: true,
-                    decoration: const InputDecoration(labelText: 'Current password'),
-                    validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _newPassword,
-                    obscureText: true,
-                    decoration: const InputDecoration(labelText: 'New password (min 8)'),
-                    validator: (v) {
-                      if (v == null || v.length < 8) return 'At least 8 characters';
-                      if (v == _currentPassword.text) return 'Choose a different password';
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _confirmPassword,
-                    obscureText: true,
-                    decoration: const InputDecoration(labelText: 'Confirm new password'),
-                    validator: (v) => v != _newPassword.text ? 'Passwords do not match' : null,
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.tonal(
-                      onPressed: auth.busy ? null : _changePassword,
-                      child: const Text('Change password'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
         ),
+        title: const Text('Profile'),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
+        children: [
+          v2Centered(
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: colors.isDark
+                          ? const [Color(0xFF1B2A2C), Color(0xFF251318)]
+                          : const [Color(0xFFF8F2E9), Color(0xFFEFE0DD)],
+                    ),
+                    border: Border.all(color: colors.border),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 60,
+                        height: 60,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            colors: [Color(0xFFB3263B), Color(0xFF761527)],
+                          ),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          initial,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              user?.fullName ?? 'Student',
+                              style: TextStyle(
+                                color: colors.textMain,
+                                fontFamily: 'serif',
+                                fontSize: 22,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Text(
+                              user?.email ?? '',
+                              style: TextStyle(
+                                color: colors.textMuted,
+                                fontSize: 11.5,
+                              ),
+                            ),
+                            if (user?.createdAt != null) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                'Joined ${formatDate(user!.createdAt!)}',
+                                style: TextStyle(
+                                  color: colors.textDim,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      V2Badge(
+                        user?.course ?? 'Student',
+                        color: colors.primary,
+                        dense: true,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                GlassCard(
+                  padding: const EdgeInsets.all(16),
+                  child: Form(
+                    key: _profileKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const SectionHeading(title: 'Account details'),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: _fullName,
+                          decoration: const InputDecoration(
+                            labelText: 'Full name',
+                          ),
+                          validator: (v) => (v == null || v.trim().isEmpty)
+                              ? 'Required'
+                              : null,
+                        ),
+                        const SizedBox(height: 10),
+                        TextFormField(
+                          controller: _studentNo,
+                          decoration: const InputDecoration(
+                            labelText: 'Student number',
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        TextFormField(
+                          controller: _course,
+                          decoration: const InputDecoration(
+                            labelText: 'Course',
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        TextFormField(
+                          controller: _yearLevel,
+                          decoration: const InputDecoration(
+                            labelText: 'Year level',
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        PillButton(
+                          label: auth.busy ? 'Saving…' : 'Save profile',
+                          icon: Icons.save_outlined,
+                          tone: colors.primary,
+                          expand: true,
+                          onPressed: auth.busy ? null : _saveProfile,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                GlassCard(
+                  padding: const EdgeInsets.all(16),
+                  child: Form(
+                    key: _passwordKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const SectionHeading(
+                          title: 'Change password',
+                          subtitle: 'Use at least 8 characters you have not used before.',
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: _currentPassword,
+                          obscureText: true,
+                          decoration: const InputDecoration(
+                            labelText: 'Current password',
+                          ),
+                          validator: (v) =>
+                              (v == null || v.isEmpty) ? 'Required' : null,
+                        ),
+                        const SizedBox(height: 10),
+                        TextFormField(
+                          controller: _newPassword,
+                          obscureText: true,
+                          decoration: const InputDecoration(
+                            labelText: 'New password (min 8)',
+                          ),
+                          validator: (v) {
+                            if (v == null || v.length < 8) {
+                              return 'At least 8 characters';
+                            }
+                            if (v == _currentPassword.text) {
+                              return 'Choose a different password';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 10),
+                        TextFormField(
+                          controller: _confirmPassword,
+                          obscureText: true,
+                          decoration: const InputDecoration(
+                            labelText: 'Confirm new password',
+                          ),
+                          validator: (v) => v != _newPassword.text
+                              ? 'Passwords do not match'
+                              : null,
+                        ),
+                        const SizedBox(height: 14),
+                        PillButton(
+                          label: auth.busy ? 'Updating…' : 'Change password',
+                          icon: Icons.lock_outline,
+                          expand: true,
+                          onPressed: auth.busy ? null : _changePassword,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

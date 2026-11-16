@@ -30,17 +30,17 @@ class ScheduleSlot {
   final String weekPattern;
 
   factory ScheduleSlot.fromJson(Map<String, dynamic> json) => ScheduleSlot(
-        id: json['id'] as int,
-        subjectId: json['subjectId'] as int,
-        subjectCode: json['subjectCode'] as String? ?? '',
-        subjectTitle: json['subjectTitle'] as String? ?? '',
-        color: json['color'] as String? ?? '#4F46E5',
-        dayOfWeek: json['dayOfWeek'] as int,
-        startTime: json['startTime'] as String,
-        endTime: json['endTime'] as String,
-        room: json['room'] as String?,
-        building: json['building'] as String?,
-        modality: json['modality'] as String?,
-        weekPattern: json['weekPattern'] as String? ?? 'every',
-      );
+    id: json['id'] as int,
+    subjectId: json['subjectId'] as int,
+    subjectCode: json['subjectCode'] as String? ?? '',
+    subjectTitle: json['subjectTitle'] as String? ?? '',
+    color: json['color'] as String? ?? '#4F46E5',
+    dayOfWeek: json['dayOfWeek'] as int,
+    startTime: json['startTime'] as String,
+    endTime: json['endTime'] as String,
+    room: json['room'] as String?,
+    building: json['building'] as String?,
+    modality: json['modality'] as String?,
+    weekPattern: json['weekPattern'] as String? ?? 'every',
+  );
 }

@@ -20,8 +20,8 @@ class ApiException implements Exception {
 /// normalises the API's `{ error: { message, details } }` shape.
 class ApiClient {
   ApiClient({http.Client? client, String? baseUrl})
-      : _client = client ?? http.Client(),
-        _baseUrl = _clean(baseUrl);
+    : _client = client ?? http.Client(),
+      _baseUrl = _clean(baseUrl);
 
   final http.Client _client;
   String? _baseUrl;
@@ -40,13 +40,13 @@ class ApiClient {
   }
 
   Map<String, String> get _authHeaders => {
-        if (token != null) 'Authorization': 'Bearer $token',
-      };
+    if (token != null) 'Authorization': 'Bearer $token',
+  };
 
   Map<String, String> get _headers => {
-        'Content-Type': 'application/json',
-        ..._authHeaders,
-      };
+    'Content-Type': 'application/json',
+    ..._authHeaders,
+  };
 
   Uri _uri(String path, [Map<String, dynamic>? query]) {
     final params = <String, String>{};
@@ -76,7 +76,10 @@ class ApiClient {
         (error['details'] as List?) ?? const [],
       );
     }
-    throw ApiException(response.statusCode, 'Request failed (${response.statusCode})');
+    throw ApiException(
+      response.statusCode,
+      'Request failed (${response.statusCode})',
+    );
   }
 
   Future<dynamic> _send(
@@ -117,9 +120,12 @@ class ApiClient {
 
   Future<dynamic> get(String path, {Map<String, dynamic>? query}) =>
       _send('GET', path, query: query);
-  Future<dynamic> post(String path, {Object? body}) => _send('POST', path, body: body);
-  Future<dynamic> put(String path, {Object? body}) => _send('PUT', path, body: body);
-  Future<dynamic> patch(String path, {Object? body}) => _send('PATCH', path, body: body);
+  Future<dynamic> post(String path, {Object? body}) =>
+      _send('POST', path, body: body);
+  Future<dynamic> put(String path, {Object? body}) =>
+      _send('PUT', path, body: body);
+  Future<dynamic> patch(String path, {Object? body}) =>
+      _send('PATCH', path, body: body);
   Future<dynamic> delete(String path) => _send('DELETE', path);
 
   /// Downloads a binary payload (attachment contents).

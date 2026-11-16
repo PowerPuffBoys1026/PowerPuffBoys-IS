@@ -9,7 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// first read so existing installs stay signed in.
 class TokenStore {
   TokenStore({FlutterSecureStorage? storage})
-      : _storage = storage ?? const FlutterSecureStorage();
+    : _storage = storage ?? const FlutterSecureStorage();
 
   static const _key = 'classmate_token';
 

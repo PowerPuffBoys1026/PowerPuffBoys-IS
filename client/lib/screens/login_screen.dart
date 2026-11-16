@@ -1,9 +1,9 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../state/auth_state.dart';
+import '../theme.dart';
+import 'auth_layout.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -15,9 +15,8 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  // Pre-filled with the seed demo account for quick demos.
-  final _email = TextEditingController(text: 'demo@classmate.app');
-  final _password = TextEditingController(text: 'demo12345');
+  final _email = TextEditingController();
+  final _password = TextEditingController();
   bool _obscure = true;
 
   @override
@@ -29,151 +28,146 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    FocusScope.of(context).unfocus();
     await context.read<AuthState>().login(
-          email: _email.text.trim(),
-          password: _password.text,
-        );
+      email: _email.text.trim(),
+      password: _password.text,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthState>();
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Column(
-                    children: [
-                      Container(
-                        width: 72,
-                        height: 72,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              Theme.of(context).colorScheme.primary.withValues(alpha: 0.9),
-                              const Color(0xFF22D3EE).withValues(alpha: 0.8),
-                            ],
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.35),
-                              blurRadius: 40,
-                              spreadRadius: -10,
-                            ),
-                          ],
-                        ),
-                        child: const Icon(Icons.school_outlined, size: 38, color: Colors.white),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'ClassMate',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: -0.5,
-                              color: Colors.white.withValues(alpha: 0.95),
-                            ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Attendance • Schedule • School Works',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Colors.white.withValues(alpha: 0.6),
-                            ),
-                      ),
-                    ],
+    final colors = context.colors;
+    return AuthLayout(
+      kicker: 'Welcome back',
+      title: 'Sign in to your study space.',
+      subtitle: 'Pick up where you left off — your timetable, deadlines, and focus streak are waiting.',
+      footer: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Demo account: demo@classmate.app · demo12345',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: colors.textDim, fontSize: 10.5),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            'New to ClassMate?',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: colors.textMuted, fontSize: 12),
+          ),
+          TextButton(
+            onPressed: auth.busy
+                ? null
+                : () {
+                    context.read<AuthState>().clearError();
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const RegisterScreen()),
+                    );
+                  },
+            child: const Text('Create an account'),
+          ),
+        ],
+      ),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextFormField(
+              controller: _email,
+              keyboardType: TextInputType.emailAddress,
+              autofillHints: const [AutofillHints.email],
+              decoration: const InputDecoration(
+                labelText: 'Email',
+                prefixIcon: Icon(Icons.alternate_email, size: 19),
+              ),
+              validator: (v) => (v == null || !v.contains('@'))
+                  ? 'Enter a valid email'
+                  : null,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _password,
+              obscureText: _obscure,
+              autofillHints: const [AutofillHints.password],
+              decoration: InputDecoration(
+                labelText: 'Password',
+                prefixIcon: const Icon(Icons.lock_outline, size: 19),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscure
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
+                    size: 19,
                   ),
-                  const SizedBox(height: 32),
-                  Card(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-                        child: Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: Form(
-                            key: _formKey,
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Text(
-                                  'Sign in',
-                                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.white.withValues(alpha: 0.92),
-                                      ),
-                                ),
-                                const SizedBox(height: 16),
-                                TextFormField(
-                                  controller: _email,
-                                  keyboardType: TextInputType.emailAddress,
-                                  decoration: const InputDecoration(labelText: 'Email'),
-                                  validator: (v) =>
-                                      (v == null || !v.contains('@')) ? 'Enter a valid email' : null,
-                                ),
-                                const SizedBox(height: 16),
-                                TextFormField(
-                                  controller: _password,
-                                  obscureText: _obscure,
-                                  decoration: InputDecoration(
-                                    labelText: 'Password',
-                                    suffixIcon: IconButton(
-                                      icon: Icon(_obscure ? Icons.visibility_off : Icons.visibility),
-                                      onPressed: () => setState(() => _obscure = !_obscure),
-                                    ),
-                                  ),
-                                  validator: (v) =>
-                                      (v == null || v.isEmpty) ? 'Enter your password' : null,
-                                  onFieldSubmitted: (_) => _submit(),
-                                ),
-                                if (auth.error != null) ...[
-                                  const SizedBox(height: 12),
-                                  Text(auth.error!, style: TextStyle(color: Colors.redAccent.shade100)),
-                                ],
-                                const SizedBox(height: 20),
-                                FilledButton(
-                                  onPressed: auth.busy ? null : _submit,
-                                  child: auth.busy
-                                      ? const SizedBox(
-                                          height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                                      : const Text('Sign in'),
-                                ),
-                                const SizedBox(height: 8),
-                                TextButton(
-                                  onPressed: auth.busy
-                                      ? null
-                                      : () {
-                                          context.read<AuthState>().clearError();
-                                          Navigator.of(context).push(
-                                            MaterialPageRoute(builder: (_) => const RegisterScreen()),
-                                          );
-                                        },
-                                  child: const Text('Create an account'),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+                  onPressed: () => setState(() => _obscure = !_obscure),
+                ),
+              ),
+              validator: (v) =>
+                  (v == null || v.isEmpty) ? 'Enter your password' : null,
+              onFieldSubmitted: (_) => _submit(),
+            ),
+            if (auth.error != null) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: colors.rose.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: colors.rose.withValues(alpha: 0.35),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.error_outline, size: 16, color: colors.rose),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        auth.error!,
+                        style: TextStyle(color: colors.rose, fontSize: 12),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 20),
+            SizedBox(
+              height: 48,
+              child: FilledButton(
+                onPressed: auth.busy ? null : _submit,
+                child: auth.busy
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text('Sign in'),
               ),
             ),
-          ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Icon(Icons.wifi_tethering, size: 14, color: colors.textDim),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Uses the ClassMate server configured on this device.',
+                    style: TextStyle(color: colors.textDim, fontSize: 10.5),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );

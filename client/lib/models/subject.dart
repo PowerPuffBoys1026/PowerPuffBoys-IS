@@ -20,13 +20,13 @@ class Subject {
   final String color;
 
   factory Subject.fromJson(Map<String, dynamic> json) => Subject(
-        id: json['id'] as int,
-        code: json['code'] as String,
-        title: json['title'] as String,
-        instructor: json['instructor'] as String?,
-        instructorEmail: json['instructorEmail'] as String?,
-        officeHours: json['officeHours'] as String?,
-        units: (json['units'] as num?)?.toInt() ?? 0,
-        color: json['color'] as String? ?? '#4F46E5',
-      );
+    id: json['id'] as int,
+    code: json['code'] as String,
+    title: json['title'] as String,
+    instructor: json['instructor'] as String?,
+    instructorEmail: json['instructorEmail'] as String?,
+    officeHours: json['officeHours'] as String?,
+    units: (json['units'] as num?)?.toInt() ?? 0,
+    color: json['color'] as String? ?? '#4F46E5',
+  );
 }

@@ -30,12 +30,12 @@ class Attachment {
   }
 
   factory Attachment.fromJson(Map<String, dynamic> json) => Attachment(
-        id: asInt(json['id']) ?? 0,
-        resourceType: json['resourceType'] as String? ?? '',
-        resourceId: asInt(json['resourceId']) ?? 0,
-        originalName: json['originalName'] as String? ?? 'attachment',
-        mimeType: json['mimeType'] as String? ?? 'application/octet-stream',
-        sizeBytes: asInt(json['sizeBytes']) ?? 0,
-        createdAt: asLocalDate(json['createdAt']),
-      );
+    id: asInt(json['id']) ?? 0,
+    resourceType: json['resourceType'] as String? ?? '',
+    resourceId: asInt(json['resourceId']) ?? 0,
+    originalName: json['originalName'] as String? ?? 'attachment',
+    mimeType: json['mimeType'] as String? ?? 'application/octet-stream',
+    sizeBytes: asInt(json['sizeBytes']) ?? 0,
+    createdAt: asLocalDate(json['createdAt']),
+  );
 }

@@ -34,10 +34,16 @@ class AttachmentsPanel extends StatefulWidget {
         title: const Text('Attachments'),
         content: SizedBox(
           width: 420,
-          child: AttachmentsPanel(resourceType: resourceType, resourceId: resourceId),
+          child: AttachmentsPanel(
+            resourceType: resourceType,
+            resourceId: resourceId,
+          ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
         ],
       ),
     );
@@ -65,7 +71,10 @@ class _AttachmentsPanelState extends State<AttachmentsPanel> {
       _error = null;
     });
     try {
-      final items = await context.read<Api>().attachments(widget.resourceType, widget.resourceId);
+      final items = await context.read<Api>().attachments(
+        widget.resourceType,
+        widget.resourceId,
+      );
       if (!mounted) return;
       setState(() => _items = items);
     } on ApiException catch (e) {
@@ -86,22 +95,25 @@ class _AttachmentsPanelState extends State<AttachmentsPanel> {
     try {
       final bytes = await file.readAsBytes();
       await api.uploadAttachmentBytes(
-            resourceType: widget.resourceType,
-            resourceId: widget.resourceId,
-            bytes: bytes,
-            fileName: file.name,
-          );
+        resourceType: widget.resourceType,
+        resourceId: widget.resourceId,
+        bytes: bytes,
+        fileName: file.name,
+      );
       await _load();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Uploaded ${file.name}')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Uploaded ${file.name}')));
       }
     } on ApiException catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(e.message)));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Upload failed: $e')));
       }
     } finally {
       if (mounted) setState(() => _uploading = false);
@@ -113,22 +125,26 @@ class _AttachmentsPanelState extends State<AttachmentsPanel> {
     try {
       final bytes = await api.downloadAttachment(attachment.id);
       final dir = await getTemporaryDirectory();
-      final safeName = attachment.originalName.replaceAll(RegExp(r'[^\w.\- ]'), '_');
+      final safeName = attachment.originalName.replaceAll(
+        RegExp(r'[^\w.\- ]'),
+        '_',
+      );
       final file = File('${dir.path}/cm_${attachment.id}_$safeName');
       await file.writeAsBytes(bytes, flush: true);
       final result = await OpenFilex.open(file.path, type: attachment.mimeType);
       if (result.type != ResultType.done && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Saved to ${file.path}')),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Saved to ${file.path}')));
       }
     } on ApiException catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(e.message)));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not open file: $e')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Could not open file: $e')));
       }
     }
   }
@@ -141,8 +157,14 @@ class _AttachmentsPanelState extends State<AttachmentsPanel> {
         title: Text('Delete ${attachment.originalName}?'),
         content: const Text('The file is removed from this record.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
         ],
       ),
     );
@@ -152,7 +174,8 @@ class _AttachmentsPanelState extends State<AttachmentsPanel> {
       await _load();
     } on ApiException catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(e.message)));
       }
     }
   }
@@ -184,14 +207,20 @@ class _AttachmentsPanelState extends State<AttachmentsPanel> {
           children: [
             Expanded(
               child: Text(
-                _items.isEmpty ? 'No attachments yet' : '${_items.length} file(s)',
+                _items.isEmpty
+                    ? 'No attachments yet'
+                    : '${_items.length} file(s)',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ),
             TextButton.icon(
               onPressed: _uploading ? null : _upload,
               icon: _uploading
-                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
                   : const Icon(Icons.upload_file),
               label: const Text('Upload'),
             ),
@@ -211,7 +240,11 @@ class _AttachmentsPanelState extends State<AttachmentsPanel> {
                   dense: true,
                   contentPadding: EdgeInsets.zero,
                   leading: Icon(_iconFor(a)),
-                  title: Text(a.originalName, maxLines: 1, overflow: TextOverflow.ellipsis),
+                  title: Text(
+                    a.originalName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                   subtitle: Text(formatBytes(a.sizeBytes)),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,

@@ -17,25 +17,29 @@ class RecycleBinItem {
   final DateTime? expiresAt;
 
   factory RecycleBinItem.fromJson(Map<String, dynamic> json) => RecycleBinItem(
-        id: asInt(json['id']) ?? 0,
-        type: json['type'] as String? ?? 'item',
-        label: json['label'] as String? ?? 'Untitled',
-        deletedAt: asLocalDate(json['deletedAt']),
-        expiresAt: asLocalDate(json['expiresAt']),
-      );
+    id: asInt(json['id']) ?? 0,
+    type: json['type'] as String? ?? 'item',
+    label: json['label'] as String? ?? 'Untitled',
+    deletedAt: asLocalDate(json['deletedAt']),
+    expiresAt: asLocalDate(json['expiresAt']),
+  );
 }
 
 /// Result of `POST /recycle_bin/:id/restore`.
 class RestoreResult {
-  const RestoreResult({required this.id, required this.type, required this.label});
+  const RestoreResult({
+    required this.id,
+    required this.type,
+    required this.label,
+  });
 
   final int id;
   final String type;
   final String label;
 
   factory RestoreResult.fromJson(Map<String, dynamic> json) => RestoreResult(
-        id: asInt(json['id']) ?? 0,
-        type: json['type'] as String? ?? 'item',
-        label: json['label'] as String? ?? 'Untitled',
-      );
+    id: asInt(json['id']) ?? 0,
+    type: json['type'] as String? ?? 'item',
+    label: json['label'] as String? ?? 'Untitled',
+  );
 }

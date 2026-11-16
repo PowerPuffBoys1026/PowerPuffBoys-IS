@@ -6,17 +6,21 @@ import '../models/grade.dart';
 import '../models/subject.dart';
 import '../state/app_state.dart';
 import '../state/grades_state.dart';
+import '../theme.dart';
 import '../utils/format.dart';
+import '../widgets/v2_kit.dart';
+import 'subjects_screen.dart';
 
 class GradesScreen extends StatelessWidget {
   const GradesScreen({super.key});
 
-  Future<void> _openForm(BuildContext context, {GradeComponent? existing}) async {
+  Future<void> _openForm(
+    BuildContext context, {
+    GradeComponent? existing,
+  }) async {
     final subjects = context.read<AppState>().subjects;
     if (subjects.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Add a subject first.')),
-      );
+      _toast(context, 'Add a subject first.');
       return;
     }
     final result = await showDialog<_GradeFormResult>(
@@ -45,21 +49,25 @@ class GradesScreen extends StatelessWidget {
         );
       }
     } on ApiException catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
-      }
+      if (context.mounted) _toast(context, e.message);
     }
   }
 
   Future<void> _delete(BuildContext context, GradeComponent grade) async {
     final ok = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: Text('Delete ${grade.componentName}?'),
         content: const Text('The component moves to the recycle bin.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete')),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Delete'),
+          ),
         ],
       ),
     );
@@ -67,10 +75,28 @@ class GradesScreen extends StatelessWidget {
     try {
       await context.read<GradesState>().remove(grade.id);
     } on ApiException catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
-      }
+      if (context.mounted) _toast(context, e.message);
     }
+  }
+
+  Future<void> _setTarget(
+    BuildContext context,
+    SubjectGradeSummary subject,
+    double target,
+  ) async {
+    final grades = context.read<GradesState>();
+    try {
+      for (final component in subject.components) {
+        await grades.update(component.id, targetPct: target);
+      }
+    } on ApiException catch (e) {
+      if (context.mounted) _toast(context, e.message);
+    }
+  }
+
+  static void _toast(BuildContext context, String message) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -83,194 +109,501 @@ class GradesScreen extends StatelessWidget {
       return const Center(child: CircularProgressIndicator());
     }
 
+    final hasGrades = summary != null && summary.subjects.isNotEmpty;
+
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: RefreshIndicator(
         onRefresh: state.load,
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: v2PagePadding(context),
           children: [
-            if (state.error != null)
-              Card(
-                child: ListTile(
-                  leading: const Icon(Icons.cloud_off),
-                  title: Text(state.error!),
-                  trailing: TextButton(onPressed: state.load, child: const Text('Retry')),
-                ),
-              ),
-            _SummaryCard(summary: summary),
-            const SizedBox(height: 16),
-            if (summary == null || summary.subjects.isEmpty)
-              Card(
-                child: ListTile(
-                  leading: const Icon(Icons.grading_outlined),
-                  title: const Text('No grade components yet'),
-                  subtitle: Text(
-                    subjects.isEmpty
-                        ? 'Add subjects, then track weighted components here.'
-                        : 'Tap + to add your first component.',
+            v2Centered(
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (state.error != null) ...[
+                    GlassCard(
+                      padding: const EdgeInsets.all(13),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.cloud_off, size: 18),
+                          const SizedBox(width: 9),
+                          Expanded(
+                            child: Text(
+                              state.error!,
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: state.load,
+                            child: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  _GpaHero(summary: summary),
+                  const SizedBox(height: 16),
+                  SectionHeading(
+                    title: 'Courses & grades',
+                    subtitle: 'Weighted components, target solver, and letter standing.',
+                    trailing: subjects.isEmpty
+                        ? PillButton(
+                            label: 'Add subject',
+                            icon: Icons.add,
+                            tone: context.colors.primary,
+                            dense: true,
+                            onPressed: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const SubjectsScreen(),
+                              ),
+                            ),
+                          )
+                        : null,
                   ),
-                ),
-              )
-            else
-              for (final subject in summary.subjects) _SubjectGradeCard(
-                subject: subject,
-                onEdit: (grade) => _openForm(context, existing: grade),
-                onDelete: (grade) => _delete(context, grade),
+                  const SizedBox(height: 10),
+                  if (subjects.isNotEmpty)
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        PillButton(
+                          label: 'Manage subjects',
+                          icon: Icons.menu_book_outlined,
+                          dense: true,
+                          onPressed: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const SubjectsScreen(),
+                            ),
+                          ),
+                        ),
+                        PillButton(
+                          label: 'Add component',
+                          icon: Icons.add,
+                          tone: context.colors.primary,
+                          dense: true,
+                          onPressed: () => _openForm(context),
+                        ),
+                      ],
+                    ),
+                  const SizedBox(height: 12),
+                  if (!hasGrades)
+                    V2Empty(
+                      icon: Icons.grading_outlined,
+                      title: 'No grade components yet',
+                      message: subjects.isEmpty
+                          ? 'Add subjects, then track weighted components here.'
+                          : 'Tap “Add component” to start tracking your grades.',
+                    )
+                  else
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final two = constraints.maxWidth >= 980;
+                        final cards = [
+                          for (final subject in summary.subjects)
+                            _SubjectGradeCard(
+                              subject: subject,
+                              onEdit: (grade) =>
+                                  _openForm(context, existing: grade),
+                              onDelete: (grade) => _delete(context, grade),
+                              onTarget: (target) =>
+                                  _setTarget(context, subject, target),
+                            ),
+                        ];
+                        if (!two) {
+                          return Column(
+                            children: [
+                              for (final card in cards) ...[
+                                card,
+                                const SizedBox(height: 10),
+                              ],
+                            ],
+                          );
+                        }
+                        return Wrap(
+                          spacing: 12,
+                          runSpacing: 12,
+                          children: [
+                            for (final card in cards)
+                              SizedBox(
+                                width: (constraints.maxWidth - 12) / 2,
+                                child: card,
+                              ),
+                          ],
+                        );
+                      },
+                    ),
+                ],
               ),
+            ),
           ],
         ),
       ),
       floatingActionButton: subjects.isEmpty
           ? null
-          : FloatingActionButton.extended(
+          : FloatingActionButton(
               onPressed: () => _openForm(context),
-              icon: const Icon(Icons.add),
-              label: const Text('Component'),
+              tooltip: 'Add component',
+              child: const Icon(Icons.add),
             ),
     );
   }
 }
 
-class _SummaryCard extends StatelessWidget {
-  const _SummaryCard({required this.summary});
+class _GpaHero extends StatelessWidget {
+  const _GpaHero({required this.summary});
 
   final GradeSummary? summary;
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     final gpa = summary?.cumulativeGpa;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Cumulative GPA', style: Theme.of(context).textTheme.bodySmall),
-            const SizedBox(height: 4),
-            Text(
-              gpa == null ? '—' : gpa.toStringAsFixed(2),
-              style: Theme.of(context).textTheme.displaySmall?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 4),
-            Text(summary?.academicStanding ?? 'No graded components yet'),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                Chip(label: Text('${summary?.totalUnitsCounted ?? 0} units counted')),
-                Chip(label: Text('${summary?.subjects.length ?? 0} subjects')),
-              ],
-            ),
-          ],
+    final tone = (gpa ?? 0) >= 3.5
+        ? colors.emerald
+        : (gpa ?? 0) >= 2.5
+        ? colors.amber
+        : colors.rose;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(22, 20, 22, 20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: colors.isDark
+              ? const [Color(0xFF1B2A2C), Color(0xFF251318)]
+              : const [Color(0xFFF7F1E8), Color(0xFFEFE1DE)],
         ),
+        border: Border.all(color: colors.border),
+        boxShadow: [
+          BoxShadow(
+            color: colors.primary.withValues(alpha: 0.12),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = constraints.maxWidth < 560;
+          final score = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'CUMULATIVE GPA',
+                style: TextStyle(
+                  color: colors.primary,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.6,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    gpa == null ? '—' : gpa.toStringAsFixed(2),
+                    style: TextStyle(
+                      color: colors.textMain,
+                      fontFamily: 'serif',
+                      fontSize: compact ? 46 : 58,
+                      height: 0.95,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -1.5,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 7),
+                    child: Text(
+                      '/ 4.00',
+                      style: TextStyle(color: colors.textMuted, fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                summary?.academicStanding ?? 'No graded components yet',
+                style: TextStyle(color: colors.textMuted, fontSize: 12),
+              ),
+            ],
+          );
+          final stats = Wrap(
+            spacing: 18,
+            runSpacing: 10,
+            children: [
+              _HeroStat(
+                label: 'Units counted',
+                value: '${summary?.totalUnitsCounted ?? 0}',
+              ),
+              _HeroStat(
+                label: 'Subjects',
+                value: '${summary?.subjects.length ?? 0}',
+              ),
+              _HeroStat(
+                label: 'Standing',
+                value: summary?.academicStanding ?? '—',
+                tone: tone,
+              ),
+            ],
+          );
+          if (compact) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [score, const SizedBox(height: 14), stats],
+            );
+          }
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(child: score),
+              stats,
+            ],
+          );
+        },
       ),
     );
   }
 }
 
-class _SubjectGradeCard extends StatelessWidget {
+class _HeroStat extends StatelessWidget {
+  const _HeroStat({required this.label, required this.value, this.tone});
+
+  final String label;
+  final String value;
+  final Color? tone;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            color: tone ?? colors.textMain,
+            fontSize: 15,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        Text(label, style: TextStyle(color: colors.textDim, fontSize: 9.5)),
+      ],
+    );
+  }
+}
+
+class _SubjectGradeCard extends StatefulWidget {
   const _SubjectGradeCard({
     required this.subject,
     required this.onEdit,
     required this.onDelete,
+    required this.onTarget,
   });
 
   final SubjectGradeSummary subject;
   final void Function(GradeComponent) onEdit;
   final void Function(GradeComponent) onDelete;
+  final ValueChanged<double> onTarget;
 
-  static GradeComponent? _findGrade(List<GradeComponent> grades, int id) {
-    for (final grade in grades) {
-      if (grade.id == id) return grade;
+  @override
+  State<_SubjectGradeCard> createState() => _SubjectGradeCardState();
+}
+
+class _SubjectGradeCardState extends State<_SubjectGradeCard> {
+  late double _target;
+
+  @override
+  void initState() {
+    super.initState();
+    _target = widget.subject.targetPercentage.clamp(60, 100).toDouble();
+  }
+
+  @override
+  void didUpdateWidget(covariant _SubjectGradeCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.subject.targetPercentage != widget.subject.targetPercentage) {
+      _target = widget.subject.targetPercentage.clamp(60, 100).toDouble();
     }
-    return null;
   }
 
   @override
   Widget build(BuildContext context) {
+    final subject = widget.subject;
     final state = context.read<GradesState>();
+    final colors = context.colors;
     final pct = subject.currentPercentage;
-    final components = subject.components;
+    final color = hexToColor(subject.color);
+    final tone = pct == null
+        ? colors.textMuted
+        : pct >= 85
+        ? colors.emerald
+        : pct >= 75
+        ? colors.amber
+        : colors.rose;
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 8,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: hexToColor(subject.color),
-                    borderRadius: BorderRadius.circular(4),
+    GradeComponent? findGrade(int id) {
+      for (final grade in state.grades) {
+        if (grade.id == id) return grade;
+      }
+      return null;
+    }
+
+    return GlassCard(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  subject.code.isEmpty ? '?' : subject.code[0],
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('${subject.code} · ${subject.title}',
-                          style: const TextStyle(fontWeight: FontWeight.w600)),
-                      Text(
-                        components.isEmpty
-                            ? 'No components'
-                            : '${subject.componentsCount} components · ${subject.units} units',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ],
-                  ),
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      pct == null ? '—' : '${pct.toStringAsFixed(1)}%',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                      '${subject.code} • ${subject.title}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                     Text(
-                      subject.gpa == null
-                          ? subject.letterGrade
-                          : '${subject.letterGrade} · ${subject.gpa!.toStringAsFixed(2)}',
-                      style: Theme.of(context).textTheme.bodySmall,
+                      '${subject.componentsCount} components · ${subject.units} units',
+                      style: TextStyle(color: colors.textMuted, fontSize: 10.5),
                     ),
                   ],
                 ),
-              ],
-            ),
-            if (pct != null) ...[
-              const SizedBox(height: 8),
-              LinearProgressIndicator(
-                value: (pct / 100).clamp(0, 1),
-                minHeight: 6,
-                borderRadius: BorderRadius.circular(3),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    pct == null ? '—' : '${pct.toStringAsFixed(1)}%',
+                    style: TextStyle(
+                      color: tone,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  V2Badge(
+                    subject.gpa == null
+                        ? subject.letterGrade
+                        : '${subject.letterGrade} · ${subject.gpa!.toStringAsFixed(2)}',
+                    color: tone,
+                    dense: true,
+                  ),
+                ],
               ),
             ],
-            const SizedBox(height: 6),
-            Text(
-              subject.remainingWeight <= 0
-                  ? 'All weight graded · target ${subject.targetPercentage.toStringAsFixed(0)}%'
-                  : subject.neededOnRemaining == null
-                      ? '${subject.remainingWeight.toStringAsFixed(0)}% ungraded'
-                      : 'Need ${subject.neededOnRemaining!.toStringAsFixed(1)}% on the remaining '
-                          '${subject.remainingWeight.toStringAsFixed(0)}% to hit ${subject.targetPercentage.toStringAsFixed(0)}%',
-              style: Theme.of(context).textTheme.bodySmall,
+          ),
+          if (pct != null) ...[
+            const SizedBox(height: 11),
+            V2ProgressBar(
+              value: (pct / 100).clamp(0, 1),
+              color: tone,
+              height: 6,
             ),
-            const SizedBox(height: 4),
-            for (final component in components)
+          ],
+          const SizedBox(height: 10),
+          Text(
+            subject.remainingWeight <= 0
+                ? 'All weight graded. Final letter depends on the components above.'
+                : subject.neededOnRemaining == null
+                ? '${subject.remainingWeight.toStringAsFixed(0)}% of the grade is still ungraded.'
+                : 'Need ${subject.neededOnRemaining!.toStringAsFixed(1)}% on the remaining '
+                      '${subject.remainingWeight.toStringAsFixed(0)}% to hit ${_target.toStringAsFixed(0)}%.',
+            style: TextStyle(
+              color:
+                  subject.neededOnRemaining != null &&
+                      subject.neededOnRemaining! > 100
+                  ? colors.rose
+                  : colors.textMuted,
+              fontSize: 10.5,
+              height: 1.45,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Text(
+                'Target grade',
+                style: TextStyle(
+                  color: colors.textDim,
+                  fontSize: 9.5,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.7,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '${_target.toStringAsFixed(0)}%',
+                style: TextStyle(
+                  color: color,
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+          SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              trackHeight: 3,
+              activeTrackColor: color,
+              thumbColor: color,
+              overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+            ),
+            child: Slider(
+              value: _target,
+              min: 60,
+              max: 100,
+              divisions: 40,
+              label: '${_target.toStringAsFixed(0)}%',
+              onChanged: (value) => setState(() => _target = value),
+              onChangeEnd: widget.onTarget,
+            ),
+          ),
+          const Divider(height: 16),
+          if (subject.components.isEmpty)
+            Text(
+              'No components yet.',
+              style: TextStyle(color: colors.textMuted, fontSize: 11),
+            )
+          else
+            for (final component in subject.components)
               _ComponentRow(
                 component: component,
-                grade: _findGrade(state.grades, component.id),
-                onEdit: onEdit,
-                onDelete: onDelete,
+                grade: findGrade(component.id),
+                onEdit: widget.onEdit,
+                onDelete: widget.onDelete,
               ),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -291,28 +624,58 @@ class _ComponentRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     final g = grade;
+    final score = component.scorePct;
     return InkWell(
       onTap: g == null ? null : () => onEdit(g),
-      onLongPress: g == null ? null : () => onDelete(g),
+      borderRadius: BorderRadius.circular(6),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
         child: Row(
           children: [
+            Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(
+                color: score == null ? colors.textDim : colors.primary,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 8),
             Expanded(
               child: Text(
-                '${component.componentName} · ${component.weightPct.toStringAsFixed(0)}%',
-                style: Theme.of(context).textTheme.bodyMedium,
+                component.componentName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: colors.textMain,
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
             Text(
-              component.scorePct == null ? 'ungraded' : '${component.scorePct!.toStringAsFixed(1)}%',
-              style: Theme.of(context).textTheme.bodySmall,
+              '${component.weightPct.toStringAsFixed(0)}%',
+              style: TextStyle(color: colors.textDim, fontSize: 10),
+            ),
+            const SizedBox(width: 10),
+            SizedBox(
+              width: 52,
+              child: Text(
+                score == null ? 'ungraded' : '${score.toStringAsFixed(1)}%',
+                textAlign: TextAlign.end,
+                style: TextStyle(
+                  color: score == null ? colors.textDim : colors.textMain,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ),
             if (g != null)
               PopupMenuButton<String>(
                 padding: EdgeInsets.zero,
-                icon: const Icon(Icons.more_vert, size: 18),
+                icon: Icon(Icons.more_vert, size: 17, color: colors.textDim),
                 onSelected: (value) {
                   if (value == 'edit') onEdit(g);
                   if (value == 'delete') onDelete(g);
@@ -321,7 +684,9 @@ class _ComponentRow extends StatelessWidget {
                   PopupMenuItem(value: 'edit', child: Text('Edit')),
                   PopupMenuItem(value: 'delete', child: Text('Delete')),
                 ],
-              ),
+              )
+            else
+              const SizedBox(width: 30),
           ],
         ),
       ),
@@ -369,7 +734,9 @@ class _GradeFormDialogState extends State<_GradeFormDialog> {
     final e = widget.existing;
     _subjectId = e?.subjectId ?? widget.subjects.first.id;
     _name = TextEditingController(text: e?.componentName ?? '');
-    _weight = TextEditingController(text: e == null ? '20' : e.weightPct.toString());
+    _weight = TextEditingController(
+      text: e == null ? '20' : e.weightPct.toString(),
+    );
     _score = TextEditingController(text: e?.scorePct?.toString() ?? '');
     _target = TextEditingController(text: (e?.targetPct ?? 85).toString());
   }
@@ -384,7 +751,9 @@ class _GradeFormDialogState extends State<_GradeFormDialog> {
   }
 
   String? _validatePercent(String? value, {bool required = true}) {
-    if (value == null || value.trim().isEmpty) return required ? 'Required' : null;
+    if (value == null || value.trim().isEmpty) {
+      return required ? 'Required' : null;
+    }
     final parsed = double.tryParse(value.trim());
     if (parsed == null) return 'Enter a number';
     if (!required && (parsed < 0 || parsed > 100)) return 'Between 0 and 100';
@@ -400,7 +769,9 @@ class _GradeFormDialogState extends State<_GradeFormDialog> {
         subjectId: _subjectId,
         componentName: _name.text.trim(),
         weightPct: double.parse(_weight.text.trim()),
-        scorePct: _score.text.trim().isEmpty ? null : double.parse(_score.text.trim()),
+        scorePct: _score.text.trim().isEmpty
+            ? null
+            : double.parse(_score.text.trim()),
         targetPct: double.parse(_target.text.trim()),
       ),
     );
@@ -422,30 +793,44 @@ class _GradeFormDialogState extends State<_GradeFormDialog> {
                 decoration: const InputDecoration(labelText: 'Subject'),
                 items: [
                   for (final s in widget.subjects)
-                    DropdownMenuItem(value: s.id, child: Text('${s.code} · ${s.title}')),
+                    DropdownMenuItem(
+                      value: s.id,
+                      child: Text('${s.code} · ${s.title}'),
+                    ),
                 ],
-                onChanged: editing ? null : (v) => setState(() => _subjectId = v!),
+                onChanged: editing
+                    ? null
+                    : (v) => setState(() => _subjectId = v!),
               ),
               TextFormField(
                 controller: _name,
                 decoration: const InputDecoration(labelText: 'Component name'),
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? 'Required' : null,
               ),
               TextFormField(
                 controller: _weight,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 decoration: const InputDecoration(labelText: 'Weight %'),
                 validator: (v) => _validatePercent(v),
               ),
               TextFormField(
                 controller: _score,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(labelText: 'Score % (optional)'),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: const InputDecoration(
+                  labelText: 'Score % (optional)',
+                ),
                 validator: (v) => _validatePercent(v, required: false),
               ),
               TextFormField(
                 controller: _target,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 decoration: const InputDecoration(labelText: 'Target %'),
                 validator: (v) => _validatePercent(v),
               ),
@@ -454,7 +839,10 @@ class _GradeFormDialogState extends State<_GradeFormDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
         FilledButton(onPressed: _save, child: const Text('Save')),
       ],
     );

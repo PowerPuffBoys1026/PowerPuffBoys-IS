@@ -19,7 +19,15 @@ const List<String> dayNames = [
   'Saturday',
 ];
 
-const List<String> dayShortNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const List<String> dayShortNames = [
+  'Sun',
+  'Mon',
+  'Tue',
+  'Wed',
+  'Thu',
+  'Fri',
+  'Sat',
+];
 
 /// "08:00" -> "8:00 AM"
 String formatClock(String hhmm) {
@@ -30,6 +38,31 @@ String formatClock(String hhmm) {
   final period = hour >= 12 ? 'PM' : 'AM';
   final h = hour % 12 == 0 ? 12 : hour % 12;
   return '$h:$minute $period';
+}
+
+/// "2026-11-15T..." -> "November 15, 2026".
+String formatDate(String iso, {bool withTime = false}) {
+  final d = DateTime.tryParse(iso);
+  if (d == null) return iso;
+  const months = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
+  final date = '${months[d.month - 1]} ${d.day}, ${d.year}';
+  if (!withTime) return date;
+  final hour = d.hour % 12 == 0 ? 12 : d.hour % 12;
+  final minute = d.minute.toString().padLeft(2, '0');
+  return '$date · $hour:$minute ${d.hour >= 12 ? 'PM' : 'AM'}';
 }
 
 /// "512 B", "48.2 KB", "3.4 MB"
@@ -55,10 +88,16 @@ String formatDuration(Duration duration) {
 /// Human-friendly relative due label, e.g. "in 3 days" / "overdue".
 String dueLabel(DateTime? due, {DateTime? now}) {
   if (due == null) return 'No due date';
-  final today = DateTime((now ?? DateTime.now()).year, (now ?? DateTime.now()).month, (now ?? DateTime.now()).day);
+  final today = DateTime(
+    (now ?? DateTime.now()).year,
+    (now ?? DateTime.now()).month,
+    (now ?? DateTime.now()).day,
+  );
   final target = DateTime(due.year, due.month, due.day);
   final diff = target.difference(today).inDays;
-  if (diff < 0) return diff == -1 ? 'Overdue by 1 day' : 'Overdue by ${-diff} days';
+  if (diff < 0) {
+    return diff == -1 ? 'Overdue by 1 day' : 'Overdue by ${-diff} days';
+  }
   if (diff == 0) return 'Due today';
   if (diff == 1) return 'Due tomorrow';
   return 'Due in $diff days';
