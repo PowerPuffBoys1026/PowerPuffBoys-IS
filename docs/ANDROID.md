@@ -4,9 +4,9 @@
 > client, talking to the ClassMate API on a LAN development laptop, with the APK
 > compiled in GitHub Actions.
 >
-> **Status:** Phases 1–3 implemented; CI APK build green (run `43724990247`).
-> Phase 4 (device QA) next.
-> **Last updated:** 2026-11-15.
+> **Status:** Phases 1–3 implemented; v2 field-journal UI port complete
+> (`55b9932`); CI APK build green (run `43860338196`). Phase 4 (device QA) next.
+> **Last updated:** 2026-11-17.
 
 ---
 
@@ -355,25 +355,25 @@ adb install -r app-release.apk
 
 ## 8. v2 parity matrix
 
-| Feature | v2 web UI | Flutter client today | Android v2 target |
+| Feature | v2 web UI | Flutter client | Status |
 |---|---|---|---|
-| Auth (login/register) | yes | yes | keep |
-| Profile edit + password | yes | no | add |
-| Subjects CRUD | yes | yes | keep |
-| Subject `instructorEmail`, `officeHours` | yes | no | add |
-| Schedule CRUD + day view | yes | yes | keep |
-| Schedule `building`, `weekPattern`, weekly grid | yes | partial | add |
-| Attendance marking + summary | yes | yes | keep |
-| School works CRUD + status | yes | yes | keep |
-| Notes CRUD + pin | yes | yes | keep |
-| Note ↔ subject link | yes | no | add |
-| Attachments (works/notes) | yes | no | add |
-| Dashboard today | yes | yes | keep |
-| Grades components + GPA/standing | yes | no | add |
-| Focus timer + ambient audio | yes | no | add |
-| Study stats + streak | yes | no | add |
-| Recycle bin (restore/purge) | yes | no | add |
-| Midnight Glass theme | yes | yes | keep |
+| Auth (login/register) | yes | yes | done |
+| Profile edit + password | yes | yes | done |
+| Subjects CRUD | yes | yes | done |
+| Subject `instructorEmail`, `officeHours` | yes | yes | done |
+| Schedule CRUD + day view | yes | yes | done |
+| Schedule `building`, `weekPattern`, weekly grid | yes | yes | done |
+| Attendance marking + summary | yes | yes | done |
+| School works CRUD + status | yes | yes | done |
+| Notes CRUD + pin | yes | yes | done |
+| Note reader + subject link | yes | yes | done |
+| Attachments (works/notes) | yes | yes | done |
+| Dashboard today | yes | yes | done |
+| Grades components + GPA/standing | yes | yes | done |
+| Focus timer + ambient audio | yes | timer only | audio deferred |
+| Study stats + streak | yes | yes | done |
+| Recycle bin (restore/purge) | yes | yes | done |
+| v2 field-journal theme | yes | yes | done |
 | Reminders/notifications | no | no | out of scope |
 
 ### 8.1 API endpoints to add to `client/lib/api/api.dart`
@@ -434,12 +434,15 @@ Ambient loops must be bundled **royalty-free/CC0** assets.
 
 ### 8.4 Navigation
 
-The web v2 has 8 views; the current shell has 6. Nine bottom-bar destinations do not
-fit. Target:
+The shell now mirrors the web v2's 8 views:
 
-**Bottom bar:** Today · Timetable · Works · Focus · More
-**More sheet/screen:** Attendance · Subjects · Grades · Notes · Recycle Bin · Profile · Server settings
-**Wide screens:** keep the `NavigationRail` with all destinations.
+**In-shell views:** Today · Timetable · Attendance · Tasks · Focus Zone · Courses & GPA · Flashnotes · Recycle Bin
+**Phone bottom bar:** Today · Plan · Tasks · Focus · Notes · More
+**More sheet:** Attendance · Courses & GPA · Recycle Bin · Profile · Settings · theme toggle · sign out
+**Wide screens:** `NavigationRail` with all 8 destinations
+
+`ProfileScreen` and `SettingsScreen` are pushed routes; `more_screen.dart` is a
+legacy hub that the shell no longer imports.
 
 ---
 
@@ -450,7 +453,7 @@ fit. Target:
 | **0** | Toolchain, branch, `flutter analyze`/`test`, web preview | Working local Flutter + `feature/android-v2` branch | 0.5 d |
 | **1** | Manifest (INTERNET/cleartext), Gradle memory, signing, CI workflow, app label/version | CI-produced installable APK | 1 d |
 | **2** | Models, API methods, state, secure storage, extended fields | v2 data layer compiling and tested | 2–3 d |
-| **3** | Grades, Focus, Recycle Bin, Profile, attachments, navigation, theme polish | Full v2 UI parity | 3–4 d |
+| **3** | Grades, Focus, Recycle Bin, Profile, attachments, navigation, v2 field-journal UI port | Full v2 UI parity | 3–4 d |
 | **4** | Device QA, release tag, docs, demo script | `v2.0.0` APK + QA sign-off | 1–2 d |
 
 Branching: `feature/android-v2` off the v2 integration branch; PRs target `main` only

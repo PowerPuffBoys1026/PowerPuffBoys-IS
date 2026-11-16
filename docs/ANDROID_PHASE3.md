@@ -1,6 +1,7 @@
-# ClassMate v2 — Phase 3: UI Parity
+# ClassMate v2 — Phase 3: UI Parity & Field-Journal Refresh
 
-**Status:** implemented; `flutter analyze` clean, 21/21 tests pass, CI APK built.
+**Status:** implemented; `flutter analyze` clean, 24/24 tests pass, CI APK built
+from `55b9932` (run `43860338196`).
 **Branch:** `feature/android-v2`
 **Scope:** Flutter client UI only. No device run yet (Phase 4).
 
@@ -8,72 +9,96 @@
 
 ## 1. Goal
 
-Expose every Phase 2 API from the app so the Android build reaches feature parity
-with the v2 web experience, without introducing a new design language (all screens
-reuse the existing Midnight Glass theme/cards).
+Expose every Phase 2 API from the app and replace the original Midnight Glass
+shell with the v2 field-journal design from `Version 2 UI UX/public`. The Phase 2
+data/API layer is unchanged; screens now use the v2 palette, cards, pills,
+editorial typography, light/dark themes, and the v2 navigation model.
 
 ## 2. Navigation
 
-`HomeShell` now has six destinations:
+`HomeShell` now has eight in-shell destinations:
 
-| # | Tab | Screen |
+| # | Destination | Screen |
 |---|---|---|
-| 0 | Home | `DashboardScreen` (unchanged) |
-| 1 | Schedule | `ScheduleScreen` (extended) |
-| 2 | Works | `WorksScreen` (extended) |
-| 3 | Grades | `GradesScreen` (new) |
-| 4 | Focus | `FocusScreen` (new) |
-| 5 | More | `MoreScreen` (new hub) |
+| 0 | Today | `DashboardScreen` |
+| 1 | Timetable | `ScheduleScreen` |
+| 2 | Attendance | `AttendanceScreen` |
+| 3 | Tasks | `WorksScreen` |
+| 4 | Focus Zone | `FocusScreen` |
+| 5 | Courses & GPA | `GradesScreen` |
+| 6 | Flashnotes | `NotesScreen` |
+| 7 | Recycle Bin | `RecycleBinScreen` |
 
-"More" hosts **Attendance**, **Subjects**, **Notes**, **Recycle bin**,
-**Profile**, and **Settings** as pushed routes, plus the sign-out action.
-Existing Attendance/Subjects/Notes screens are reused unchanged apart from the
-subject form.
+Wide screens use a `NavigationRail` with all eight destinations. The phone bottom
+bar shows **Today · Plan · Tasks · Focus · Notes · More**; the More sheet opens
+Attendance, Courses & GPA, Recycle Bin, Profile, Settings, the theme toggle, and
+sign out. Profile and Settings are pushed routes.
 
-## 3. New screens
+The six-tab `MoreScreen` hub from the first parity pass remains in the tree but is
+no longer imported by the shell.
+
+## 3. Screens and UI foundation
 
 | File | What it does |
 |---|---|
-| `lib/screens/grades_screen.dart` | Cumulative GPA/standing card, per-subject progress + letter/GPA, remaining-weight "need X% to hit target" hint, component CRUD (long-press or menu), target/weight/score validation |
-| `lib/screens/focus_screen.dart` | Focus / short-break / long-break modes, circular countdown, 15/25/45/60 presets, subject link, start/pause/reset, auto-log on completion, manual log, today/week/streak stats, per-subject minutes, recent sessions with delete |
-| `lib/screens/more_screen.dart` | Hub tiles + signed-in header, pushes the remaining screens inside the glass background |
-| `lib/screens/profile_screen.dart` | Edit full name/student no/course/year level (`PUT /auth/me`), change password with confirm + min-8 validation (`PUT /auth/me/password`) |
-| `lib/screens/settings_screen.dart` | View/edit the runtime API URL, save + refresh, reset to build default, "Test" connection via `GET /auth/me` |
-| `lib/screens/recycle_bin_screen.dart` | List deleted items with type/deleted/expiry, restore, delete forever, refresh |
-| `lib/widgets/attachments_panel.dart` | Shared attachment list: pick + upload (`file_picker`), download to temp + open (`open_filex`), delete; used in a dialog for works and notes |
+| `lib/theme.dart` | v2 `AppColors` extension + light/dark `buildTheme` |
+| `lib/state/theme_state.dart` | persisted light/dark mode (`theme_mode`) |
+| `lib/widgets/v2_kit.dart` | shared v2 kit: glass cards, pills, buttons, section headings, sheet headers |
+| `lib/screens/auth_layout.dart` | editorial auth shell with hero image/gradient fallback and form panel |
+| `lib/screens/login_screen.dart` | v2 login form on `AuthLayout` |
+| `lib/screens/register_screen.dart` | v2 registration form on `AuthLayout` |
+| `lib/screens/home_shell.dart` | v2 rail/bottom nav, More sheet, theme toggle, eight-view `IndexedStack` |
+| `lib/screens/dashboard_screen.dart` | v2 overview with today's classes, deadlines, attendance and GPA cards |
+| `lib/screens/attendance_screen.dart` | health banner, safe-cut stats, per-course cards, quick Present/Late/Absent marking, custom-date dialog |
+| `lib/screens/schedule_screen.dart` | week-at-a-glance plan, week/day toggle, clipboard export, class detail sheet with edit/delete/mark-present, slot form |
+| `lib/screens/works_screen.dart` | searchable task cards, status filters, checkbox completion, status menu, attachments/edit/delete |
+| `lib/screens/focus_screen.dart` | stat tiles, timer ring, mode/preset pills, subject selector, focus log/history |
+| `lib/screens/grades_screen.dart` | GPA hero, per-subject cards, component rows, target solver slider, subject-management link |
+| `lib/screens/notes_screen.dart` | searchable flashnote card grid with pin/edit/delete |
+| `lib/screens/note_reader_screen.dart` | full-note reader with pin/edit/delete and tags |
+| `lib/screens/note_editor_screen.dart` | theme-aware formatting toolbar, subject link, save flow |
+| `lib/screens/recycle_bin_screen.dart` | shell-compatible v2 recycle bin with restore/purge and empty/error states |
+| `lib/screens/profile_screen.dart` | v2 profile form and password change |
+| `lib/screens/settings_screen.dart` | v2 server URL editor and connection test |
+| `lib/screens/subjects_screen.dart` | v2 subject cards/forms with instructor email and office hours |
 
 ## 4. Extended existing screens
 
 | File | Change |
 |---|---|
-| `home_shell.dart` | Six tabs (Home/Schedule/Works/Grades/Focus/More); rail + bottom bar |
-| `subjects_screen.dart` | Instructor email + office hours fields/display |
-| `schedule_screen.dart` | Building + week pattern (A/B/every) fields; tap a class card to edit (`PUT /schedule/:id`); building/week chip shown on the card |
-| `works_screen.dart` | Edit dialog (title/subject/type/priority/due/notes → full PUT); "Attachments" menu action |
-| `note_editor_screen.dart` | "Linked subject" picker (saved via `subjectId`), attachments action |
-| `utils/format.dart` | `formatBytes`, `formatDuration` helpers |
+| `home_shell.dart` | eight in-shell views, rail + phone bottom bar, More sheet, theme toggle |
+| `schedule_screen.dart` | building + week pattern fields, weekly grid, export, tap-to-edit |
+| `works_screen.dart` | search/status filters, card completion toggle, full edit, attachments |
+| `grades_screen.dart` | links to Subjects for adding/managing courses |
+| `note_editor_screen.dart` | linked-subject picker and attachments action |
+| `utils/format.dart` | `formatDate`, `formatBytes`, `formatDuration` helpers |
+| `more_screen.dart` | legacy hub retained but unused by the shell |
 
 ## 5. Packages added
 
 | Package | Version | Why |
 |---|---|---|
-| `flutter_secure_storage` | 11.2.0 | Phase 2 token storage (already added) |
+| `flutter_secure_storage` | 11.2.0 | Phase 2 token storage |
 | `file_picker` | 13.3.3 | Native file selection for attachments |
 | `open_filex` | 5.0.0 | Open downloaded attachment via Android intent |
-| `path_provider` | 2.1.6 | Temp directory for downloads (promoted to direct dep) |
+| `path_provider` | 2.1.6 | Temp directory for downloads |
 
 Android notes:
 
 - `file_picker` uses SAF; no storage permissions required.
 - `open_filex` ships its FileProvider entry; no manifest edits needed.
 - Both plugin registrants are generated; commit them with the plugin changes.
+- Ambient focus audio is deferred; no `audioplayers` dependency was added yet.
 
 ## 6. Data behaviour
 
 - On sign-in `_Root` loads `AppState`, `NotesState`, `GradesState`, `StudyState`;
   on sign-out all four are reset.
+- The light/dark choice persists through `SharedPreferences` key `theme_mode`.
 - Grades/study mutations re-fetch list + summary/stats so dashboard cards stay
   coherent with the server (single source of truth).
+- The grades target slider updates each component through
+  `grades.update(id, targetPct: target)` and re-fetches the summary.
 - Attachment upload uses `readAsBytes()` + multipart bytes so Android
   `content://` picks work without a filesystem path.
 - Server URL changes take effect immediately (`ApiClient.baseUrl`), no rebuild.
@@ -83,11 +108,12 @@ Android notes:
 ```
 cd client
 flutter analyze   # No issues found
-flutter test      # 21/21 pass
+flutter test      # 24/24 pass
 ```
 
-CI: run `43724990247` — **Success** in 5m 29s; artifact `classmate-v2-apk`
-(`app-release.apk`, debug-signed until keystore secrets are added).
+CI: run `43860338196` — **Success** from commit `55b9932`; artifact
+`classmate-v2-apk` (`app-release.apk`, debug-signed until keystore secrets are
+added).
 
 Not verified yet:
 
@@ -99,23 +125,25 @@ Not verified yet:
 
 ## 8. Known limitations
 
-- `AttachmentsPanel` imports `dart:io` (temp files, `open_filex`), so
-  `flutter build web` is no longer supported from this branch. Android/desktop
-  builds are unaffected. Revisit with conditional imports if web parity is needed.
+- `AttachmentsPanel` still uses the older v1 presentation and imports `dart:io`
+  (temp files, `open_filex`), so `flutter build web` is not supported from this
+  branch. Android/desktop builds are unaffected.
 - Focus timer does not persist across app restarts; a session is logged only when
-  the timer completes or the user taps log.
-- Subject/slot edits send explicit empty strings for optional text (server treats
-  them via its own trimming rules), and clearing a slot's room is not exposed in
+  the timer completes or the user taps log. Ambient audio is not implemented.
+- `more_screen.dart` is unused; remove or repurpose it once the v2 shell is final.
+- The theme requests the `Inter` font, which is not bundled; Flutter falls back
+  silently.
+- Subject/slot edits send explicit empty strings for optional text (the server
+  applies its own trimming rules), and clearing a slot's room is not exposed in
   the edit form (create/update still accepts null from the API layer).
-- Six-tab bottom bar is tight on very narrow screens; acceptable for the project
-  phones (>=360 dp).
+- Recycle Bin is an in-shell view; Profile and Settings are pushed routes.
 
 ## 9. Next phase (Phase 4)
 
-1. Download `classmate-v2-apk` from run `43724990247`; sideload it.
+1. Download `classmate-v2-apk` from run `43860338196`; sideload it.
 2. Start PostgreSQL + `npm start` on the laptop; point the app at the LAN URL.
 3. QA script: login, server URL switch, subject/slot extended fields, grade CRUD
    + GPA math, focus session log/stats, attachments upload/open/delete, recycle
-   restore/purge, profile + password change, logout/login.
+   restore/purge, profile + password change, theme toggle, logout/login.
 4. Generate a release keystore + repo secrets, rebuild signed APK.
 5. Tag `v2.0.0` after QA sign-off; merge both v2 PRs before `main` (BL-002).
