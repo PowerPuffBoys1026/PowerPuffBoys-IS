@@ -5,6 +5,8 @@ This is a solid work of Group 7: Mobile App
 > and the setup guide in one file.
 >
 > **Running or stopping the app? See [`docs/run-and-stop.md`](docs/run-and-stop.md).**
+>
+> **Mobile-ready backend? See [`docs/mobile-ready-backend.md`](docs/mobile-ready-backend.md).**
 
 ---
 
@@ -48,6 +50,7 @@ PowerPuffBoys/
 │   └── PULL_REQUEST_TEMPLATE.md
 ├── docs/
 │   ├── kickoff.md           START HERE — brief + setup guide
+│   ├── mobile-ready-backend.md  backend/database feature record
 │   ├── plan.md              technical plan (ERD + API reference)
 │   └── team-notes.md        shared scratchpad + conflict drill
 ├── server/                  Node + Express REST API (scaffolded + tested)
