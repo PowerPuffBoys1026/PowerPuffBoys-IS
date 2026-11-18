@@ -295,6 +295,9 @@ Start-Service postgresql-x64-18
 | `PGCONNECT_TIMEOUT_MS` | `5000` | Timeout for acquiring a connection |
 | `PGSTATEMENT_TIMEOUT_MS` | `10000` | Per-query statement timeout |
 | `ATTENDANCE_THRESHOLD` | `20` | Absence percentage that triggers a warning |
+| `REQUEST_TIMEOUT_MS` | `30000` | Maximum time for a single phone request |
+| `AUTH_RATE_LIMIT_MAX` | `20` | Login/register attempts per IP per window (raise for shared Wi-Fi) |
+| `AUTH_RATE_LIMIT_WINDOW_MS` | `900000` | Auth rate-limit window in milliseconds |
 
 ---
 

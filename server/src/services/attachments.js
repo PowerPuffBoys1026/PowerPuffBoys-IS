@@ -33,7 +33,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: 20 * 1024 * 1024, files: 1 },
+  limits: { fileSize: config.attachmentMaxBytes, files: 1 },
   fileFilter(req, file, callback) {
     const extension = path.extname(file.originalname.replaceAll('\\', '/')).toLowerCase();
     const type = FILE_TYPES[extension];

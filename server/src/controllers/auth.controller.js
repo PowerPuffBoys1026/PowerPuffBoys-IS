@@ -41,6 +41,17 @@ function signToken(user) {
   return jwt.sign({ sub: String(user.id) }, config.jwtSecret, { expiresIn: config.jwtExpiresIn });
 }
 
+/** Login/register payload; expiry lets mobile clients plan a silent re-login. */
+function authResponse(user) {
+  const token = signToken(user);
+  const decoded = jwt.decode(token);
+  return {
+    token,
+    tokenExpiresAt: new Date(decoded.exp * 1000).toISOString(),
+    user: publicUser(user),
+  };
+}
+
 const AuthController = {
   register: async (req, res) => {
     const data = validate(registerSchema, req.body);
@@ -60,7 +71,7 @@ const AuthController = {
       yearLevel: data.yearLevel ?? null,
     });
 
-    res.status(201).json({ token: signToken(user), user: publicUser(user) });
+    res.status(201).json(authResponse(user));
   },
 
   login: async (req, res) => {
@@ -71,7 +82,7 @@ const AuthController = {
       throw new HttpError(401, 'Invalid email or password');
     }
 
-    res.json({ token: signToken(user), user: publicUser(user) });
+    res.json(authResponse(user));
   },
 
   me: async (req, res) => {

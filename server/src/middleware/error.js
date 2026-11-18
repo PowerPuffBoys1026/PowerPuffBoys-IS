@@ -38,6 +38,7 @@ function errorHandler(err, req, res, next) {
   }
 
   const body = { error: { message } };
+  if (err.errorCode) body.error.code = err.errorCode;
   if (err.details) body.error.details = err.details;
   if (status === 500) console.error(err);
 

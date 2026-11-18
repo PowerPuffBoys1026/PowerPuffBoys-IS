@@ -53,6 +53,18 @@ const config = {
   uploadDir: process.env.UPLOAD_DIR
     ? path.resolve(process.cwd(), process.env.UPLOAD_DIR)
     : path.join(__dirname, '..', 'data', 'uploads'),
+
+  // Mobile-friendly limits. Phones on flaky connections benefit from a shorter
+  // request timeout; shared Wi-Fi might need a higher auth limit per public IP.
+  requestTimeoutMs: Math.max(1000, Number(process.env.REQUEST_TIMEOUT_MS) || 30_000),
+  authRateLimitMax: Math.max(1, Number(process.env.AUTH_RATE_LIMIT_MAX) || 20),
+  authRateLimitWindowMs: Math.max(
+    1000,
+    Number(process.env.AUTH_RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
+  ),
+  jsonBodyLimitBytes: 1024 * 1024,
+  attachmentMaxBytes: 20 * 1024 * 1024,
+  maxPageSize: 100,
 };
 
 module.exports = config;

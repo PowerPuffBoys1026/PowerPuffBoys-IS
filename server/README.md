@@ -68,6 +68,7 @@ Every route except `POST /auth/register` and `POST /auth/login` needs
 | Method | Path | Notes |
 |---|---|---|
 | GET | `/health` | Liveness + database check (`503` when PostgreSQL is down) |
+| GET | `/client-config` | Non-secret thresholds, enums and payload limits for clients |
 | POST | `/auth/register` | `{ email, password (8–72), fullName, studentNo?, course? }` |
 | POST | `/auth/login` | `{ email, password }` — rate limited |
 | GET | `/auth/me` | Current user |
@@ -111,6 +112,16 @@ Endpoints are payload-compatible with the Flutter client already in `client/`:
 JWTs from login/register are stored on the device and sent as
 `Authorization: Bearer <token>`. All rows stay scoped to the authenticated user,
 so phone and desktop sessions cannot read each other's data.
+
+Mobile-specific behaviour:
+
+- Login/register also return `tokenExpiresAt` so a phone can plan a re-login.
+- An expired token produces `401 { error: { code: 'TOKEN_EXPIRED', ... } }`;
+  other bad tokens stay generic. A phone can fetch `/api/client-config` at
+  startup for thresholds, enums and payload limits instead of hard-coding them.
+- `REQUEST_TIMEOUT_MS`, `AUTH_RATE_LIMIT_MAX` and `AUTH_RATE_LIMIT_WINDOW_MS`
+  are tunable in `.env`. Several phones behind one NAT share an IP, so raise
+  the auth limit during a demo if needed.
 
 ## Architecture (MVC)
 

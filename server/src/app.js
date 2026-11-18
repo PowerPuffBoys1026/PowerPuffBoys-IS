@@ -19,6 +19,7 @@ const studyRoutes = require('./routes/study');
 const gradeRoutes = require('./routes/grades');
 const attachmentRoutes = require('./routes/attachments');
 const recycleBinRoutes = require('./routes/recycle_bin');
+const clientConfigRoutes = require('./routes/client-config');
 
 const app = express();
 
@@ -31,7 +32,7 @@ app.use(
     origin: config.corsOrigins.includes('*') ? true : config.corsOrigins,
   }),
 );
-app.use(express.json({ limit: '1mb' }));
+app.use(express.json({ limit: config.jsonBodyLimitBytes }));
 
 // v2 web frontend (served from server/public)
 const publicPath = path.join(__dirname, '..', 'public');
@@ -41,6 +42,7 @@ if (fs.existsSync(publicPath)) {
 
 const API_ENDPOINTS = [
   { method: 'GET', path: '/api/health', description: 'Health check (API + database)' },
+  { method: 'GET', path: '/api/client-config', description: 'Non-secret client limits and enums' },
   { method: 'POST', path: '/api/auth/register', description: 'Create an account' },
   { method: 'POST', path: '/api/auth/login', description: 'Log in and get a JWT' },
   { method: 'GET/PUT', path: '/api/auth/me', description: 'Read / update the current user' },
@@ -168,6 +170,7 @@ app.use('/api/study', studyRoutes);
 app.use('/api/grades', gradeRoutes);
 app.use('/api/attachments', attachmentRoutes);
 app.use('/api/recycle-bin', recycleBinRoutes);
+app.use('/api/client-config', clientConfigRoutes);
 
 // SPA fallback for v2 web frontend (non-API GET requests)
 app.get(/^(?!\/api).*/, (req, res, next) => {

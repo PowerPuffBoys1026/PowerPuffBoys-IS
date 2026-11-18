@@ -13,6 +13,7 @@ process.env.APP_TIMEZONE ||= 'Asia/Manila';
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { Client } = require('pg');
+const jwt = require('jsonwebtoken');
 
 const testDatabase = `classmate_test_${process.pid}_${Date.now()}`;
 let maintenance;
@@ -100,6 +101,7 @@ test('register, login, and auth/me work', async () => {
   });
   assert.equal(login.status, 200);
   assert.ok(login.body.token);
+  assert.match(login.body.tokenExpiresAt, /^\d{4}-\d{2}-\d{2}T/);
 
   const me = await req('GET', '/auth/me', { token });
   assert.equal(me.status, 200);
@@ -112,6 +114,28 @@ test('protected routes reject missing and invalid tokens', async () => {
 
   const invalid = await req('GET', '/subjects', { token: 'not-a-jwt' });
   assert.equal(invalid.status, 401);
+});
+
+test('expired tokens get a structured code so mobile clients can re-login', async () => {
+  const config = require('../src/config');
+  const expired = jwt.sign({ sub: '1' }, config.jwtSecret, { expiresIn: '-1s' });
+  const result = await req('GET', '/subjects', { token: expired });
+  assert.equal(result.status, 401);
+  assert.equal(result.body.error.code, 'TOKEN_EXPIRED');
+  assert.equal(result.body.error.message, 'Token expired');
+});
+
+test('client-config exposes non-secret limits and enums', async () => {
+  const result = await req('GET', '/client-config');
+  assert.equal(result.status, 200);
+  assert.equal(result.body.service, 'classmate-api');
+  assert.equal(typeof result.body.attendanceThreshold, 'number');
+  assert.equal(result.body.limits.jsonBodyBytes, 1024 * 1024);
+  assert.equal(result.body.limits.attachmentBytes, 20 * 1024 * 1024);
+  assert.equal(result.body.limits.maxPageSize, 100);
+  assert.deepEqual(result.body.enums.workStatus, ['todo', 'doing', 'done']);
+  assert.equal(result.body.jwtSecret, undefined);
+  assert.equal(result.body.pgPassword, undefined);
 });
 
 test('subject CRUD, validation, and pagination', async () => {
