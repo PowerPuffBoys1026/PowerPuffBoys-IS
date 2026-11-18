@@ -197,6 +197,37 @@ Notes:
 - For access outside the LAN, use a tunnel (Cloudflare Tunnel, ngrok) or router
   port forwarding instead of exposing PostgreSQL.
 
+### Test on an Android phone (mobile-first)
+
+`localhost` in the Flutter client points at the phone itself, not your PC. Use
+the PC's LAN address instead:
+
+1. In `server/`, run `npm run mobile:config`. It prints your LAN IPv4 address,
+   the exact `--dart-define` flag to use, the phone health-check URL, and the
+   Windows Firewall command.
+2. Allow port 3000 through Windows Firewall once (the script prints the
+   command; see also §3), and keep the API running with `npm run dev`.
+3. Enable USB debugging on the phone, connect it, then run:
+
+   ```powershell
+   cd client
+   flutter devices
+   flutter run -d <device-id> --dart-define=API_BASE_URL=http://<pc-ip>:3000/api
+   ```
+
+   Replace `<pc-ip>` with the address from step 1. On the Android emulator use
+   `http://10.0.2.2:3000/api` instead.
+4. Confirm from the phone browser: `http://<pc-ip>:3000/api/health`.
+5. If you open the **Web** client on the phone, add `http://<pc-ip>:8080` to
+   `CORS_ORIGIN` in `server/.env`, restart the API, then run with
+   `flutter run -d chrome --web-port 8080 --dart-define=API_BASE_URL=http://<pc-ip>:3000/api`.
+
+Notes:
+
+- The Android manifest allows `INTERNET` and cleartext LAN HTTP in development;
+  switch to HTTPS before any real deployment.
+- iOS builds require macOS/Xcode and cannot be verified on this Windows machine.
+
 ---
 
 ## 4. Stop the app
