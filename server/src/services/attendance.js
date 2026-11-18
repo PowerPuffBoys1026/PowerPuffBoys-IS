@@ -3,63 +3,35 @@ const config = require('../config');
 
 /**
  * Per-subject attendance figures for one user.
- * Attendance rate counts present / (present + absent + late); cancelled
+ *
+ * The calculation lives in the PostgreSQL routine `get_attendance_summary`
+ * (migration 005) so the API and any direct DB client share one source of
+ * truth. Attendance rate counts present / (present + absent + late); cancelled
  * sessions are ignored. `warning` is true once the absence rate reaches the
- * configured threshold.
+ * configured threshold or the student has used the 28-session allowance.
  */
 async function attendanceSummary(userId) {
-  const result = await db.query(
-    `SELECT s.id,
-            s.code,
-            s.title,
-            s.color,
-            SUM(CASE WHEN a.status = 'present'   THEN 1 ELSE 0 END)::int AS present,
-            SUM(CASE WHEN a.status = 'absent'    THEN 1 ELSE 0 END)::int AS absent,
-            SUM(CASE WHEN a.status = 'late'      THEN 1 ELSE 0 END)::int AS late,
-            SUM(CASE WHEN a.status = 'cancelled' THEN 1 ELSE 0 END)::int AS cancelled
-       FROM subjects s
-       LEFT JOIN attendance_records a ON a.subject_id = s.id
-      WHERE s.user_id = $1
-      GROUP BY s.id, s.code, s.title, s.color
-      ORDER BY s.code`,
-    [userId],
-  );
+  const result = await db.query('SELECT * FROM get_attendance_summary($1, $2)', [
+    userId,
+    config.attendanceThreshold,
+  ]);
 
-  const rows = result.rows;
-
-  return rows.map((row) => {
-    const present = Number(row.present) || 0;
-    const absent = Number(row.absent) || 0;
-    const late = Number(row.late) || 0;
-    const cancelled = Number(row.cancelled) || 0;
-    const counted = present + absent + late;
-    const attendanceRate = counted ? Math.round((present / counted) * 1000) / 10 : null;
-    const absenceRate = counted ? Math.round((absent / counted) * 1000) / 10 : null;
-    // v2-compatible fields
-    const maxAllowedAbsences = Math.max(3, Math.floor((config.attendanceThreshold / 100) * 28));
-    const safeMissesLeft = Math.max(0, maxAllowedAbsences - absent);
-    let healthStatus = 'safe';
-    if (absenceRate !== null && (absenceRate >= config.attendanceThreshold || absent >= maxAllowedAbsences)) {
-      healthStatus = absent > maxAllowedAbsences ? 'critical' : 'warning';
-    }
-
-    return {
-      subjectId: row.id,
-      code: row.code,
-      title: row.title,
-      color: row.color,
-      present,
-      absent,
-      late,
-      cancelled,
-      counted,
-      attendanceRate,
-      absenceRate,
-      safeMissesLeft,
-      healthStatus,
-      warning: absenceRate !== null && (absenceRate >= config.attendanceThreshold || absent >= maxAllowedAbsences),
-    };
-  });
+  return result.rows.map((row) => ({
+    subjectId: row.subject_id,
+    code: row.code,
+    title: row.title,
+    color: row.color,
+    present: Number(row.present) || 0,
+    absent: Number(row.absent) || 0,
+    late: Number(row.late) || 0,
+    cancelled: Number(row.cancelled) || 0,
+    counted: Number(row.counted) || 0,
+    attendanceRate: row.attendance_rate === null ? null : Number(row.attendance_rate),
+    absenceRate: row.absence_rate === null ? null : Number(row.absence_rate),
+    safeMissesLeft: Number(row.safe_misses_left) || 0,
+    healthStatus: row.health_status,
+    warning: Boolean(row.warning),
+  }));
 }
 
 module.exports = { attendanceSummary };
