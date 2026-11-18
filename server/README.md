@@ -164,6 +164,10 @@ server/
 ```
 
 ## Data notes
+
+Full migration, backup/rollback and integrity details:
+[`../docs/database.md`](../docs/database.md).
+
 - `attendance_records.date` is a real `date`; schedule times are `time`;
   `school_works.due_at` is `timestamptz`.
 - API dates are `YYYY-MM-DD`; times are `HH:MM` (24h); timestamps are ISO-8601.

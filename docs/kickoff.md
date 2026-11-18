@@ -249,6 +249,7 @@ On our Windows machine we can build and verify **Android, Web, and Windows deskt
 |---|---|
 | [`info.txt`](../info.txt) | The submitted project proposal |
 | [`docs/plan.md`](plan.md) | Technical plan — architecture, ERD, full API reference, risks |
+| [`docs/database.md`](database.md) | Migrations, integrity rules, backup/rollback and mobile indexes |
 | [`server/README.md`](../server/README.md) | Backend setup, scripts, endpoint details |
 | [`CONTRIBUTING.md`](../CONTRIBUTING.md) | Branch/commit/PR rules + troubleshooting |
 | [`docs/team-notes.md`](team-notes.md) | Session log + the merge-conflict drill |
