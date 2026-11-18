@@ -100,9 +100,10 @@ const WorkController = {
 
   delete: async (req, res) => {
     const id = parseId(req.params.id);
-    const result = await WorkModel.delete(id, req.userId);
-    if (!result.rowCount) throw new HttpError(404, 'School work not found');
-    res.status(204).end();
+    await ownedWork(id, req.userId);
+    const recycleBin = require('../services/recycle_bin');
+    const recycleBinId = await recycleBin.trashRecord(req.userId, 'task', id);
+    res.json({ data: { success: true, recycleBinId } });
   },
 };
 

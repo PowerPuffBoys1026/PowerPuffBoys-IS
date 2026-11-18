@@ -166,6 +166,68 @@ Expected:
 { "status": "ok", "service": "classmate-api" }
 ```
 
+### Access from another device (same Wi-Fi)
+
+The API also serves the v2 web app, and Node listens on all network interfaces.
+
+1. Allow the port through Windows Firewall once (elevated PowerShell):
+
+   ```powershell
+   New-NetFirewallRule -DisplayName "ClassMate API TCP 3000" `
+     -Direction Inbound -Protocol TCP -LocalPort 3000 `
+     -RemoteAddress LocalSubnet -Action Allow
+   ```
+
+2. Find this PC's IPv4 address:
+
+   ```powershell
+   (Get-NetIPAddress -AddressFamily IPv4 -InterfaceAlias "Wi-Fi*").IPAddress
+   ```
+
+3. On a phone or laptop connected to the same network, open
+   `http://<pc-ip>:3000`. The health check is at
+   `http://<pc-ip>:3000/api/health`.
+
+Notes:
+
+- `-RemoteAddress LocalSubnet` keeps the port private to the local network.
+- The devices must be on the same Wi-Fi; disconnect any VPN.
+- The address can change after reconnecting. Check it again or reserve a static
+  IP in the router.
+- For access outside the LAN, use a tunnel (Cloudflare Tunnel, ngrok) or router
+  port forwarding instead of exposing PostgreSQL.
+
+### Test on an Android phone (mobile-first)
+
+`localhost` in the Flutter client points at the phone itself, not your PC. Use
+the PC's LAN address instead:
+
+1. In `server/`, run `npm run mobile:config`. It prints your LAN IPv4 address,
+   the exact `--dart-define` flag to use, the phone health-check URL, and the
+   Windows Firewall command.
+2. Allow port 3000 through Windows Firewall once (the script prints the
+   command; see also §3), and keep the API running with `npm run dev`.
+3. Enable USB debugging on the phone, connect it, then run:
+
+   ```powershell
+   cd client
+   flutter devices
+   flutter run -d <device-id> --dart-define=API_BASE_URL=http://<pc-ip>:3000/api
+   ```
+
+   Replace `<pc-ip>` with the address from step 1. On the Android emulator use
+   `http://10.0.2.2:3000/api` instead.
+4. Confirm from the phone browser: `http://<pc-ip>:3000/api/health`.
+5. If you open the **Web** client on the phone, add `http://<pc-ip>:8080` to
+   `CORS_ORIGIN` in `server/.env`, restart the API, then run with
+   `flutter run -d chrome --web-port 8080 --dart-define=API_BASE_URL=http://<pc-ip>:3000/api`.
+
+Notes:
+
+- The Android manifest allows `INTERNET` and cleartext LAN HTTP in development;
+  switch to HTTPS before any real deployment.
+- iOS builds require macOS/Xcode and cannot be verified on this Windows machine.
+
 ---
 
 ## 4. Stop the app
@@ -233,6 +295,9 @@ Start-Service postgresql-x64-18
 | `PGCONNECT_TIMEOUT_MS` | `5000` | Timeout for acquiring a connection |
 | `PGSTATEMENT_TIMEOUT_MS` | `10000` | Per-query statement timeout |
 | `ATTENDANCE_THRESHOLD` | `20` | Absence percentage that triggers a warning |
+| `REQUEST_TIMEOUT_MS` | `30000` | Maximum time for a single phone request |
+| `AUTH_RATE_LIMIT_MAX` | `20` | Login/register attempts per IP per window (raise for shared Wi-Fi) |
+| `AUTH_RATE_LIMIT_WINDOW_MS` | `900000` | Auth rate-limit window in milliseconds |
 
 ---
 

@@ -35,17 +35,17 @@ const ScheduleModel = {
     return result.rows[0] || null;
   },
 
-  create: async ({ subjectId, dayOfWeek, startTime, endTime, room, modality }) => {
+  create: async ({ subjectId, dayOfWeek, startTime, endTime, room, building, modality, weekPattern }) => {
     const result = await db.query(
       `WITH inserted AS (
-         INSERT INTO schedule_slots (subject_id, day_of_week, start_time, end_time, room, modality)
-         VALUES ($1, $2, $3, $4, $5, $6)
+         INSERT INTO schedule_slots (subject_id, day_of_week, start_time, end_time, room, building, modality, week_pattern)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
          RETURNING *
        )
        SELECT i.*, s.code AS subject_code, s.title AS subject_title, s.color
          FROM inserted i
          JOIN subjects s ON s.id = i.subject_id`,
-      [subjectId, dayOfWeek, startTime, endTime, room ?? null, modality ?? null],
+      [subjectId, dayOfWeek, startTime, endTime, room ?? null, building ?? null, modality ?? null, weekPattern ?? 'every'],
     );
     return result.rows[0];
   },
@@ -56,9 +56,9 @@ const ScheduleModel = {
       `WITH updated AS (
          UPDATE schedule_slots sc
             SET subject_id = $1, day_of_week = $2, start_time = $3, end_time = $4,
-                room = $5, modality = $6
+                room = $5, building = $6, modality = $7, week_pattern = $8
            FROM subjects s
-          WHERE sc.id = $7 AND sc.subject_id = s.id AND s.user_id = $8
+          WHERE sc.id = $9 AND sc.subject_id = s.id AND s.user_id = $10
           RETURNING sc.*
        )
        SELECT u.*, s.code AS subject_code, s.title AS subject_title, s.color
@@ -70,7 +70,9 @@ const ScheduleModel = {
         updates.startTime ?? current.start_time,
         updates.endTime ?? current.end_time,
         updates.room !== undefined ? updates.room : current.room,
+        updates.building !== undefined ? updates.building : current.building,
         updates.modality !== undefined ? updates.modality : current.modality,
+        updates.weekPattern ?? current.week_pattern ?? 'every',
         id,
         userId,
       ],

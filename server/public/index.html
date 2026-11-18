@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0c1215">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>ClassMate — Student Academic & Focus Suite</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" type="image/png" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>">
+</head>
+<body class="auth-screen">
+  <!-- Ambient Glow Orbs -->
+  <div class="ambient-glow">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <div id="app">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">C</div>
+        <div class="brand-text">
+          <h1>ClassMate</h1>
+          <span>Student Suite 2.0</span>
+        </div>
+      </div>
+
+      <div class="nav-group-title">Academics</div>
+      <nav class="nav-list">
+        <a class="nav-item active" data-view="dashboard">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+          <span>Today</span>
+        </a>
+        <a class="nav-item" data-view="schedule">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+          <span>Timetable</span>
+        </a>
+        <a class="nav-item" data-view="attendance">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span>Attendance</span>
+        </a>
+        <a class="nav-item" data-view="works">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+          <span>Tasks & Works</span>
+          <span class="badge" id="sidebar-tasks-badge">0</span>
+        </a>
+        <a class="nav-item" data-view="focus">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span>Focus Zone</span>
+        </a>
+        <a class="nav-item" data-view="grades">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          <span>Courses & GPA</span>
+        </a>
+        <a class="nav-item" data-view="notes">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+          <span>Flashnotes</span>
+        </a>
+        <a class="nav-item" data-view="recycle-bin">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m19 6-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg>
+          <span>Recycle Bin</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button type="button" class="profile-card" id="btn-edit-profile" aria-label="Edit student profile and account security" onclick="openProfileModal()">
+          <div class="profile-avatar" id="sidebar-user-avatar">?</div>
+          <div class="profile-info">
+            <div class="profile-name" id="sidebar-user-name">Loading...</div>
+            <div class="profile-role" id="sidebar-user-course">Student Account</div>
+          </div>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <header class="top-header">
+        <div class="mobile-brand" aria-label="ClassMate Student Suite">
+          <div class="brand-icon">C</div>
+          <span>ClassMate</span>
+        </div>
+        <div class="header-title-box">
+          <h2 id="page-title">Today's Overview</h2>
+        </div>
+
+        <div class="header-actions">
+          <button type="button" class="mobile-profile-btn" id="btn-mobile-profile" onclick="openProfileModal()" aria-label="Open student profile">
+            <span class="profile-avatar" id="mobile-user-avatar">?</span>
+          </button>
+          <button class="pill-btn" id="header-gpa-pill" onclick="switchView('grades')">
+            <span>⭐</span>
+            <span id="header-gpa-text">GPA 3.85</span>
+          </button>
+          <button class="pill-btn" onclick="switchView('notes')">
+            <span>📝</span>
+            <span>Flashnotes</span>
+          </button>
+          <button class="pill-btn reminder-toggle" id="btn-reminders" onclick="enableDeadlineReminders()" aria-label="Enable deadline reminders">
+            <span>🔔</span>
+            <span>Reminders</span>
+          </button>
+          <button class="icon-btn" id="theme-toggle" type="button" title="Switch to light theme" aria-label="Switch to light theme">
+            <svg id="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" width="20" height="20"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+          </button>
+          <button class="icon-btn" id="btn-logout" title="Sign Out">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="20" height="20"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <div class="content-body">
+        <!-- 1. VIEW: DASHBOARD -->
+        <section class="view-section active" id="view-dashboard">
+          <div class="hero-banner">
+            <div>
+              <span class="hero-tag" id="dash-date-tag">FRIDAY · OCT 23, 2026</span>
+              <h2 class="hero-title" id="dash-greeting">Good Afternoon, Student! 🚀</h2>
+              <p class="hero-sub" id="dash-quote">"Small daily efforts compound into extraordinary results."</p>
+            </div>
+            <div style="text-align: right;">
+              <button type="button" class="badge streak-badge" title="View study streak and focus stats" aria-label="Open Focus Zone study stats" onclick="switchView('focus')" style="background: rgba(255,255,255,0.25); font-size: 13px; padding: 6px 14px; border-radius: 20px;" id="dash-streak-badge">
+                🔥 3-Day Focus Streak
+              </button>
+            </div>
+          </div>
+
+          <!-- Quick Action Pill Row -->
+          <div class="dashboard-quick-actions" style="display: flex; gap: 10px; margin-bottom: 24px; overflow-x: auto; padding-bottom: 4px;">
+            <button class="pill-btn" onclick="switchView('focus')">⏱️ Start Focus Timer</button>
+            <button class="pill-btn" onclick="switchView('attendance')">🛡️ Cut Safety Calculator</button>
+            <button class="pill-btn" onclick="openNewTaskModal()">➕ New Assignment</button>
+            <button class="pill-btn" onclick="openNewNoteModal()">📝 New Study Note</button>
+          </div>
+
+          <!-- Up Next Class Hero Card -->
+          <div class="card" style="margin-bottom: 24px; border-color: var(--border-glow);" id="next-class-card">
+            <!-- Populated via JS -->
+          </div>
+
+          <!-- Safe Skips Attendance Radar Strip -->
+          <div class="card" style="margin-bottom: 24px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 18px;">🛡️</span>
+                <h3 style="font-size: 15px; font-weight: 800;">Absence & Cut Safety Radar</h3>
+              </div>
+              <button class="pill-btn" id="btn-mark-all-today" style="font-size: 11.5px; padding: 5px 12px;">✅ Mark All Today Present</button>
+            </div>
+            <div class="radar-strip" id="dash-radar-strip">
+              <!-- Course Safe Skips Cards -->
+            </div>
+          </div>
+
+          <!-- Responsive Split: Today's Classes & Priority Deadlines -->
+          <div class="layout-split">
+            <div>
+              <h3 style="font-size: 16px; font-weight: 800; margin-bottom: 14px;">Today's Classes</h3>
+              <div id="dash-classes-list">
+                <!-- Classes -->
+              </div>
+            </div>
+            <div>
+              <h3 style="font-size: 16px; font-weight: 800; margin-bottom: 14px;">Urgent Deadlines</h3>
+              <div id="dash-deadlines-list">
+                <!-- Deadlines -->
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. VIEW: TIMETABLE -->
+        <section class="view-section" id="view-schedule">
+          <section class="card weekly-plan-card" aria-labelledby="weekly-plan-title">
+            <div class="weekly-plan-heading">
+              <div>
+                <h3 id="weekly-plan-title">Your Week at a Glance</h3>
+                <p>Classes and assignment deadlines for the next 7 days.</p>
+              </div>
+              <button class="pill-btn" onclick="openNewTaskModal()">+ Add task</button>
+            </div>
+            <div id="weekly-plan-list" class="weekly-plan-list"></div>
+          </section>
+          <div class="schedule-toolbar" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div class="schedule-toolbar-group schedule-view-actions">
+              <button class="pill-btn" id="btn-view-week" onclick="setScheduleView('week')">📅 Week View</button>
+              <button class="pill-btn" id="btn-view-day" onclick="setScheduleView('day')">🗓️ Day View</button>
+            </div>
+            <div class="schedule-toolbar-group schedule-edit-actions">
+              <button class="pill-btn" onclick="exportScheduleClipboard()">📋 Export Timetable</button>
+              <button class="btn-primary" style="padding: 8px 16px; font-size: 13px;" onclick="openNewSlotModal()">+ Add Class</button>
+            </div>
+          </div>
+
+          <div id="schedule-container">
+            <!-- Dynamic Timetable Grid -->
+          </div>
+        </section>
+
+        <!-- 3. VIEW: ATTENDANCE -->
+        <section class="view-section" id="view-attendance">
+          <div class="card" style="margin-bottom: 24px; background: var(--grad-success); color: #fff;" id="attendance-overall-banner">
+            <h3 style="font-size: 18px; font-weight: 800;">Attendance Health Status</h3>
+            <p style="font-size: 13px; opacity: 0.95;" id="attendance-overall-text">All courses are within safe absence thresholds.</p>
+          </div>
+
+          <div id="attendance-course-cards">
+            <!-- Cards populated via JS -->
+          </div>
+        </section>
+
+        <!-- 4. VIEW: TASKS & WORKS -->
+        <section class="view-section" id="view-works">
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 14px; margin-bottom: 20px; flex-wrap: wrap;">
+            <input type="text" id="task-search-input" class="form-control" style="max-width: 320px;" placeholder="Search tasks, quizzes, exams..." oninput="filterTasks()">
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button class="pill-btn active" data-filter="all" onclick="filterTaskStatus('all')">All</button>
+              <button class="pill-btn" data-filter="todo" onclick="filterTaskStatus('todo')">To Do</button>
+              <button class="pill-btn" data-filter="doing" onclick="filterTaskStatus('doing')">In Progress</button>
+              <button class="pill-btn" data-filter="done" onclick="filterTaskStatus('done')">Completed</button>
+              <button class="btn-primary" style="padding: 8px 16px; font-size: 13px;" onclick="openNewTaskModal()">+ New Task</button>
+            </div>
+          </div>
+
+          <div id="tasks-list-container">
+            <!-- Populated via JS -->
+          </div>
+        </section>
+
+        <!-- 5. VIEW: FOCUS ZONE -->
+        <section class="view-section" id="view-focus">
+          <div class="stat-grid">
+            <div class="card stat-card">
+              <div class="stat-icon" style="background: rgba(255, 87, 34, 0.15); color: #ff5722;">🔥</div>
+              <div>
+                <div class="stat-val" id="focus-streak-val">3 Days</div>
+                <div class="stat-label">Study Streak</div>
+              </div>
+            </div>
+            <div class="card stat-card">
+              <div class="stat-icon" style="background: var(--primary-medium); color: var(--primary);">⏱️</div>
+              <div>
+                <div class="stat-val" id="focus-today-val">45m</div>
+                <div class="stat-label">Studied Today</div>
+              </div>
+            </div>
+            <div class="card stat-card">
+              <div class="stat-icon" style="background: rgba(16, 185, 129, 0.15); color: var(--emerald);">📊</div>
+              <div>
+                <div class="stat-val" id="focus-week-val">180m</div>
+                <div class="stat-label">Past 7 Days</div>
+              </div>
+            </div>
+            <div class="card stat-card">
+              <div class="stat-icon" style="background: rgba(245, 158, 11, 0.15); color: var(--amber);">🏆</div>
+              <div>
+                <div class="stat-val" id="focus-sessions-val">12</div>
+                <div class="stat-label">Total Sessions</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="layout-split">
+            <!-- Timer Card -->
+            <div class="card timer-container">
+              <div class="mode-selector">
+                <div class="mode-btn active" onclick="setTimerMode('focus')">Deep Focus (25m)</div>
+                <div class="mode-btn" onclick="setTimerMode('short')">Short Break (5m)</div>
+                <div class="mode-btn" onclick="setTimerMode('long')">Long Break (15m)</div>
+              </div>
+
+              <div class="circle-timer">
+                <svg viewBox="0 0 270 270">
+                  <circle class="circle-bg" cx="135" cy="135" r="125" />
+                  <circle class="circle-progress" id="timer-circle-progress" cx="135" cy="135" r="125" />
+                </svg>
+                <div class="timer-digits">
+                  <div class="timer-time" id="timer-display">25:00</div>
+                  <div class="timer-state" id="timer-mode-tag">DEEP FOCUS</div>
+                </div>
+              </div>
+
+              <div class="timer-controls">
+                <button class="btn-secondary" onclick="resetTimer()">Reset</button>
+                <button class="btn-primary" id="btn-timer-toggle" onclick="toggleTimer()">▶ Start Focus</button>
+              </div>
+
+              <div style="margin-top: 24px; width: 100%; max-width: 320px;">
+                <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 6px;">Tag Course</label>
+                <select id="timer-subject-select" class="form-control">
+                  <option value="">General Study (Untagged)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Ambient Soundscapes & History -->
+            <div>
+              <div class="card" style="margin-bottom: 24px;">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 18px;">🎧</span>
+                    <h3 style="font-size: 15px; font-weight: 800;">Ambient Soundscape Generator</h3>
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox" id="ambient-audio-toggle" onchange="toggleAmbientAudio(this.checked)">
+                    <span class="slider"></span>
+                  </label>
+                </div>
+                <p style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">
+                  Built-in Web Audio tone synthesizer to drown distractions and trigger flow state.
+                </p>
+
+                <div class="sound-presets">
+                  <div class="sound-pill active" onclick="setSoundscape('rain')">🌧️ Rainfall</div>
+                  <div class="sound-pill" onclick="setSoundscape('cafe')">☕ Campus Cafe</div>
+                  <div class="sound-pill" onclick="setSoundscape('forest')">🌲 Deep Woods</div>
+                  <div class="sound-pill" onclick="setSoundscape('lofi')">📻 Lo-Fi Beats</div>
+                </div>
+
+                <div class="waveform-box" id="waveform-box">
+                  <!-- Visualizer bars -->
+                </div>
+              </div>
+
+              <div class="card">
+                <h3 style="font-size: 15px; font-weight: 800; margin-bottom: 12px;">Recent Completed Sessions</h3>
+                <div id="focus-history-list">
+                  <!-- Populated via JS -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 6. VIEW: COURSES & GPA SOLVER -->
+        <section class="view-section" id="view-grades">
+          <div class="hero-banner" style="background: var(--grad-focus);">
+            <div>
+              <span class="hero-tag">ACADEMIC STANDING</span>
+              <h2 class="hero-title" id="gpa-large-val">3.85 / 4.00</h2>
+              <p class="hero-sub" id="gpa-standing-text">🏆 President's List Pace · 12 Units Counted</p>
+            </div>
+            <button class="pill-btn" style="background: rgba(255,255,255,0.25); color: #fff; border: none;" onclick="openNewCourseModal()">+ Add Course</button>
+          </div>
+
+          <!-- Final Exam Target Solver Box -->
+          <div class="card" id="gpa-solver-card" style="margin-bottom: 24px; scroll-margin-top: 24px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 18px;">🎯</span>
+              <h3 style="font-size: 16px; font-weight: 800;">Exam Target Solver <span id="solver-subject-label" style="color: var(--primary);"></span></h3>
+            </div>
+            <p style="font-size: 12.5px; color: var(--text-muted); margin-top: 4px;">
+              Set your target grade to calculate the score needed across the ungraded course components.
+            </p>
+
+            <div class="grade-slider-box">
+              <div class="slider-row">
+                <span style="font-size: 13px; font-weight: 700;">Target Desired Course Grade:</span>
+                <span style="font-size: 16px; font-weight: 900; color: var(--primary);" id="slider-target-val">90% (A)</span>
+              </div>
+              <input type="range" id="gpa-target-slider" min="70" max="98" value="90" oninput="updateGpaSimulation(this.value)">
+              <div style="margin-top: 14px; font-size: 13px; font-weight: 600; color: var(--emerald);" id="simulation-output-text">
+                ✨ With your current Midterm and Quiz averages, you need an 88.5% on your Final Exam to secure an A!
+              </div>
+            </div>
+          </div>
+
+          <div id="courses-cards-container">
+            <!-- Course Cards -->
+          </div>
+        </section>
+
+        <!-- 7. VIEW: FLASHNOTES -->
+        <section class="view-section" id="view-notes">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+            <input type="text" id="notes-search-input" class="form-control" style="max-width: 320px;" placeholder="Search notes, formulas, cheat sheets..." oninput="filterNotes()">
+            <div class="notes-toolbar-actions">
+              <button class="pill-btn" id="btn-review-notes" onclick="startNoteReview()">🧠 Review due <span id="review-due-count">0</span></button>
+              <button class="btn-primary" onclick="openNewNoteModal()">+ New Flashnote</button>
+            </div>
+          </div>
+
+          <div id="notes-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px;">
+            <!-- Notes -->
+          </div>
+        </section>
+
+        <section class="view-section" id="view-recycle-bin">
+          <div class="recycle-bin-header">
+            <div>
+              <h3>Recycle Bin</h3>
+              <p>Deleted items are permanently removed after 30 days.</p>
+            </div>
+            <button type="button" class="pill-btn" onclick="refreshRecycleBin()">↻ Refresh</button>
+          </div>
+          <div id="recycle-bin-list" class="recycle-bin-list"></div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div class="modal-overlay" id="profile-modal" onclick="if (event.target === this) closeModal('profile-modal')">
+    <div class="modal-card profile-modal-card" role="dialog" aria-modal="true" aria-labelledby="profile-modal-title">
+      <div class="profile-modal-heading">
+        <div>
+          <h2 id="profile-modal-title">Student Profile</h2>
+          <p>Update your student details and account security.</p>
+        </div>
+        <button type="button" class="icon-btn" title="Close profile" aria-label="Close profile" onclick="closeModal('profile-modal')">×</button>
+      </div>
+      <form id="profile-form" onsubmit="handleProfileSave(event)">
+        <h3 class="profile-section-title">Student details</h3>
+        <div class="form-group">
+          <label for="profile-email">Account email</label>
+          <input type="email" id="profile-email" class="form-control" readonly aria-describedby="profile-email-help">
+          <small id="profile-email-help" class="form-help">Email changes require account verification and aren’t available here.</small>
+        </div>
+        <div class="profile-form-grid">
+          <div class="form-group">
+            <label for="profile-full-name">Full name</label>
+            <input type="text" id="profile-full-name" class="form-control" autocomplete="name" required>
+          </div>
+          <div class="form-group">
+            <label for="profile-student-no">Student ID</label>
+            <input type="text" id="profile-student-no" class="form-control" autocomplete="off" placeholder="Enter your student ID">
+          </div>
+          <div class="form-group">
+            <label for="profile-year-level">Year level</label>
+            <input type="text" id="profile-year-level" class="form-control" placeholder="e.g. 2nd Year">
+          </div>
+          <div class="form-group">
+            <label for="profile-course">Course / program</label>
+            <input type="text" id="profile-course" class="form-control" placeholder="e.g. BS Computer Science">
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" onclick="closeModal('profile-modal')">Cancel</button>
+          <button type="submit" class="btn-primary">Save student details</button>
+        </div>
+      </form>
+      <form id="profile-password-form" class="profile-password-form" onsubmit="handlePasswordChange(event)">
+        <h3 class="profile-section-title">Account security</h3>
+        <div class="profile-form-grid">
+          <div class="form-group">
+            <label for="profile-current-password">Current password</label>
+            <input type="password" id="profile-current-password" class="form-control" autocomplete="current-password" required>
+          </div>
+          <div class="form-group">
+            <label for="profile-new-password">New password</label>
+            <input type="password" id="profile-new-password" class="form-control" autocomplete="new-password" minlength="8" required>
+          </div>
+          <div class="form-group profile-password-confirm">
+            <label for="profile-confirm-password">Confirm new password</label>
+            <input type="password" id="profile-confirm-password" class="form-control" autocomplete="new-password" minlength="8" required>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="submit" class="pill-btn">Change password</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Standalone sign-in screen; the app shell remains hidden until authentication succeeds. -->
+  <main class="modal-overlay open" id="auth-modal" aria-labelledby="auth-title">
+    <div class="auth-layout">
+      <section class="auth-editorial" aria-label="ClassMate student suite">
+        <img class="auth-photo" src="https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&amp;fit=crop&amp;w=1800&amp;q=85" alt="A quiet university library lined with bookshelves">
+        <div class="auth-editorial-shade"></div>
+        <a class="auth-wordmark" href="/" aria-label="ClassMate home">
+          <span class="auth-mark">C</span>
+          <span>CLASSMATE<small>STUDENT SUITE</small></span>
+        </a>
+        <div class="auth-editorial-copy">
+          <p class="auth-overline">A NEW PAGE, EVERY DAY</p>
+          <h1>Make room for<br><em>the semester.</em></h1>
+          <p class="auth-quote">A little more clarity for everything ahead.</p>
+          <div class="auth-photo-caption"><span>FIELD NOTES</span><span>01 / 26</span></div>
+        </div>
+      </section>
+
+      <section class="auth-form-side" aria-label="Account access">
+        <div class="auth-topline">
+          <span>CLASSMATE <i>/</i> ACCOUNT ACCESS</span>
+          <button class="icon-btn auth-theme-toggle" id="auth-theme-toggle" type="button" title="Switch to light theme" aria-label="Switch to light theme">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="20" height="20" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+          </button>
+        </div>
+
+        <div class="auth-form-wrap">
+          <p class="auth-form-kicker">YOUR DESK IS READY</p>
+          <h2 id="auth-title">Welcome back.</h2>
+          <p id="auth-description">Pick up where your semester is taking you.</p>
+
+          <form id="login-form" class="auth-form" onsubmit="handleLogin(event)">
+            <div class="form-group">
+              <label for="login-email">Email address</label>
+              <input type="email" id="login-email" class="form-control" autocomplete="username" required>
+            </div>
+            <div class="form-group">
+              <label for="login-password">Password</label>
+              <input type="password" id="login-password" class="form-control" autocomplete="current-password" required>
+            </div>
+            <div id="login-error" class="auth-error" role="alert"></div>
+            <button type="submit" class="btn-primary auth-submit-button">Sign in <span aria-hidden="true">→</span></button>
+            <p class="auth-switch-copy">New to ClassMate? <button type="button" class="auth-switch-button" onclick="showSignupForm()">Create an account</button></p>
+          </form>
+
+          <form id="signup-form" class="auth-form" onsubmit="handleRegister(event)" hidden>
+            <div class="form-group">
+              <label for="signup-full-name">Full name</label>
+              <input type="text" id="signup-full-name" class="form-control" autocomplete="name" required>
+            </div>
+            <div class="form-group">
+              <label for="signup-email">Email address</label>
+              <input type="email" id="signup-email" class="form-control" autocomplete="email" required>
+            </div>
+            <div class="form-group">
+              <label for="signup-password">Password</label>
+              <input type="password" id="signup-password" class="form-control" autocomplete="new-password" minlength="8" required>
+            </div>
+            <div class="signup-extra-fields">
+              <div class="form-group">
+                <label for="signup-student-no">Student ID <span>(optional)</span></label>
+                <input type="text" id="signup-student-no" class="form-control" autocomplete="off">
+              </div>
+              <div class="form-group">
+                <label for="signup-year-level">Year level <span>(optional)</span></label>
+                <input type="text" id="signup-year-level" class="form-control" placeholder="e.g. 2nd Year">
+              </div>
+              <div class="form-group signup-course-field">
+                <label for="signup-course">Course / program <span>(optional)</span></label>
+                <input type="text" id="signup-course" class="form-control" placeholder="e.g. BS Computer Science">
+              </div>
+            </div>
+            <div id="signup-error" class="auth-error" role="alert"></div>
+            <button type="submit" class="btn-primary auth-submit-button">Create account <span aria-hidden="true">→</span></button>
+            <p class="auth-switch-copy">Already have an account? <button type="button" class="auth-switch-button" onclick="showLoginForm()">Sign in</button></p>
+          </form>
+        </div>
+
+        <div class="auth-footnote"><span>CLASSMATE / 2026</span><span>MADE FOR THE WORK AHEAD</span></div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Add Course Modal -->
+  <div class="modal-overlay" id="course-modal">
+    <div class="modal-card">
+      <h3 style="font-size: 18px; font-weight: 800; margin-bottom: 6px;">Add Course</h3>
+      <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 18px;">Courses organize your timetable, tasks, attendance, grades, and notes.</p>
+      <form id="course-form" onsubmit="handleCreateCourse(event)">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label>Course Code</label>
+            <input type="text" id="course-input-code" class="form-control" placeholder="e.g. CS 201" required>
+          </div>
+          <div class="form-group">
+            <label>Units</label>
+            <input type="number" id="course-input-units" class="form-control" min="0" max="20" value="3" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Course Title</label>
+          <input type="text" id="course-input-title" class="form-control" placeholder="e.g. Data Structures" required>
+        </div>
+        <div class="form-group">
+          <label>Instructor</label>
+          <input type="text" id="course-input-instructor" class="form-control" placeholder="Optional">
+        </div>
+        <div class="form-group">
+          <label>Instructor Email</label>
+          <input type="email" id="course-input-email" class="form-control" placeholder="Optional">
+        </div>
+        <div class="form-group">
+          <label>Course Color</label>
+          <input type="color" id="course-input-color" class="form-control" value="#a51c30">
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+          <button type="button" class="btn-secondary" onclick="closeModal('course-modal')">Cancel</button>
+          <button type="submit" class="btn-primary">Add Course</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="class-detail-modal" onclick="if (event.target === this) closeModal('class-detail-modal')">
+    <div class="modal-card class-detail-modal-card" role="dialog" aria-modal="true" aria-labelledby="class-detail-title">
+      <div class="class-detail-heading">
+        <span class="hero-tag" id="class-detail-code"></span>
+        <h3 id="class-detail-title"></h3>
+      </div>
+      <dl class="class-detail-meta">
+        <div><dt>Date</dt><dd id="class-detail-date"></dd></div>
+        <div><dt>Time</dt><dd id="class-detail-time"></dd></div>
+        <div><dt>Location</dt><dd id="class-detail-location"></dd></div>
+      </dl>
+      <div class="class-detail-actions">
+        <button type="button" class="pill-btn" onclick="openSelectedClassTimetable()">Open timetable</button>
+        <button type="button" class="pill-btn" onclick="openSelectedClassAttendance()">Open attendance</button>
+        <button type="button" class="pill-btn class-detail-late" onclick="markSelectedClass('late')">Mark late</button>
+        <button type="button" class="btn-primary" onclick="markSelectedClass('present')">Mark present</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="slot-modal" onclick="if (event.target === this) closeModal('slot-modal')">
+    <div class="modal-card">
+      <h3 style="font-size: 18px; font-weight: 800; margin-bottom: 18px;">Add Class to Timetable</h3>
+      <form id="slot-form" onsubmit="handleCreateSlot(event)">
+        <div class="form-group">
+          <label>Course</label>
+          <select id="slot-input-subject" class="form-control" required></select>
+        </div>
+        <div class="form-group">
+          <label>Day</label>
+          <select id="slot-input-day" class="form-control" required>
+            <option value="0">Sunday</option>
+            <option value="1">Monday</option>
+            <option value="2">Tuesday</option>
+            <option value="3">Wednesday</option>
+            <option value="4">Thursday</option>
+            <option value="5">Friday</option>
+            <option value="6">Saturday</option>
+          </select>
+        </div>
+        <div class="slot-time-fields">
+          <div class="form-group">
+            <label>Start time</label>
+            <input type="time" id="slot-input-start" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label>End time</label>
+            <input type="time" id="slot-input-end" class="form-control" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Room or location</label>
+          <input type="text" id="slot-input-room" class="form-control" placeholder="Optional">
+        </div>
+        <div class="form-group">
+          <label>Modality</label>
+          <select id="slot-input-modality" class="form-control">
+            <option value="">Not specified</option>
+            <option value="In person">In person</option>
+            <option value="Online">Online</option>
+            <option value="Hybrid">Hybrid</option>
+          </select>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" onclick="closeModal('slot-modal')">Cancel</button>
+          <button type="submit" class="btn-primary">Add to Timetable</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add Task Modal -->
+  <div class="modal-overlay" id="task-modal">
+    <div class="modal-card">
+      <h3 style="font-size: 18px; font-weight: 800; margin-bottom: 18px;">Add School Work / Assignment</h3>
+      <form id="task-form" onsubmit="handleCreateTask(event)">
+        <div class="form-group">
+          <label>Task Title</label>
+          <input type="text" id="task-input-title" class="form-control" placeholder="e.g. Lab Exercise 3, Chapter 5 Quiz" required>
+        </div>
+        <div class="form-group">
+          <label>Course</label>
+          <select id="task-input-subject" class="form-control"></select>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label>Type</label>
+            <select id="task-input-type" class="form-control">
+              <option value="assignment">Assignment</option>
+              <option value="quiz">Quiz</option>
+              <option value="exam">Exam</option>
+              <option value="project">Project</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Priority</label>
+            <select id="task-input-priority" class="form-control">
+              <option value="medium">Medium</option>
+              <option value="high">Urgent 🔥</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Due Date</label>
+          <input type="datetime-local" id="task-input-due" class="form-control">
+        </div>
+        <div class="form-group attachment-field">
+          <label for="task-attachment-files">Attachments</label>
+          <input type="file" id="task-attachment-files" class="form-control attachment-file-input" accept=".png,.jpg,.jpeg,.gif,.webp,.pdf,.doc,.docx,.ppt,.pptx,.txt" multiple>
+          <p class="attachment-hint">Images, PDF, Word, PowerPoint, or text · up to 20 MB each · 10 files per task</p>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+          <button type="button" class="btn-secondary" onclick="closeModal('task-modal')">Cancel</button>
+          <button type="submit" class="btn-primary">Save Task</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add Note Modal -->
+  <div class="modal-overlay" id="note-modal">
+    <div class="modal-card">
+      <h3 id="note-modal-title" style="font-size: 18px; font-weight: 800; margin-bottom: 18px;">New Study Flashnote</h3>
+      <form id="note-form" onsubmit="handleCreateNote(event)">
+        <div class="form-group">
+          <label>Note Title</label>
+          <input type="text" id="note-input-title" class="form-control" placeholder="e.g. Midterm Cheat Sheet, Formula Rules" required>
+        </div>
+        <div class="form-group">
+          <label>Course</label>
+          <select id="note-input-subject" class="form-control"></select>
+        </div>
+        <div class="form-group">
+          <label>Notes & Cheat Sheet Content</label>
+          <textarea id="note-input-content" class="form-control" rows="5" placeholder="Formulas, key theorems, exam hints..." required></textarea>
+        </div>
+        <div class="form-group">
+          <label>Tags (comma separated)</label>
+          <input type="text" id="note-input-tags" class="form-control" placeholder="formulas, exam, summary">
+        </div>
+        <div class="form-group attachment-field">
+          <label for="note-attachment-files">Attachments</label>
+          <input type="file" id="note-attachment-files" class="form-control attachment-file-input" accept=".png,.jpg,.jpeg,.gif,.webp,.pdf,.doc,.docx,.ppt,.pptx,.txt" multiple>
+          <p class="attachment-hint">Images, PDF, Word, PowerPoint, or text · up to 20 MB each · 10 files per note</p>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+          <button type="button" class="btn-secondary" onclick="closeModal('note-modal')">Cancel</button>
+          <button type="submit" id="note-submit-button" class="btn-primary">Save Flashnote</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="note-reader-modal" onclick="if (event.target === this) closeModal('note-reader-modal')">
+    <article class="modal-card note-reader-card" role="dialog" aria-modal="true" aria-labelledby="note-reader-title">
+      <div class="note-reader-heading">
+        <span id="note-reader-course" class="badge"></span>
+        <button type="button" class="icon-btn" title="Close note" aria-label="Close note" onclick="closeModal('note-reader-modal')">×</button>
+      </div>
+      <h2 id="note-reader-title"></h2>
+      <div id="note-reader-content" class="note-reader-content"></div>
+      <div id="note-reader-tags" class="note-reader-tags"></div>
+      <section class="note-reader-attachments" aria-labelledby="note-attachments-heading">
+        <div class="note-attachments-heading">
+          <h3 id="note-attachments-heading">Attachments</h3>
+          <button type="button" class="pill-btn" onclick="chooseNoteAttachments(activeNoteId)">+ Add files</button>
+        </div>
+        <div id="note-reader-attachments" class="attachment-file-list"></div>
+      </section>
+      <div class="note-review-controls" id="note-review-controls" hidden>
+        <p>Try to recall the answer before revealing it.</p>
+        <button type="button" class="btn-primary" id="note-review-reveal" onclick="revealNoteAnswer()">Reveal answer</button>
+        <div class="note-review-ratings" id="note-review-ratings" hidden>
+          <button type="button" class="pill-btn" onclick="rateCurrentNote('again')">Again · 10 min</button>
+          <button type="button" class="pill-btn" onclick="rateCurrentNote('good')">Good · 1 day</button>
+          <button type="button" class="pill-btn" onclick="rateCurrentNote('easy')">Easy · 4 days</button>
+        </div>
+      </div>
+      <div class="note-reader-actions">
+        <button type="button" class="pill-btn" id="note-reader-pin" onclick="toggleCurrentNotePin()">Pin</button>
+        <button type="button" class="pill-btn" onclick="editCurrentNote()">Edit</button>
+        <button type="button" class="icon-btn" title="Move note to Recycle Bin" aria-label="Delete note" onclick="deleteCurrentNote()">🗑️</button>
+      </div>
+    </article>
+  </div>
+
+  <div class="modal-overlay" id="attachment-preview-modal" onclick="if (event.target === this) closeModal('attachment-preview-modal')">
+    <section class="modal-card attachment-preview-card" role="dialog" aria-modal="true" aria-labelledby="attachment-preview-title">
+      <div class="attachment-preview-heading">
+        <div>
+          <p>ATTACHMENT PREVIEW</p>
+          <h2 id="attachment-preview-title">File</h2>
+        </div>
+        <button type="button" class="icon-btn" title="Close preview" aria-label="Close preview" onclick="closeModal('attachment-preview-modal')">×</button>
+      </div>
+      <div id="attachment-preview-content" class="attachment-preview-content" aria-live="polite"></div>
+      <div class="attachment-preview-actions">
+        <button type="button" class="btn-secondary" onclick="closeModal('attachment-preview-modal')">Close</button>
+        <button type="button" class="btn-primary" id="attachment-preview-download">Download file</button>
+      </div>
+    </section>
+  </div>
+
+  <nav class="bottom-nav" aria-label="Primary navigation">
+    <div class="mobile-more-menu" id="mobile-more-menu" aria-labelledby="mobile-more-title" hidden>
+      <div class="mobile-more-heading">
+        <h2 id="mobile-more-title">All sections</h2>
+        <button type="button" class="icon-btn" onclick="toggleMobileMenu(false)" aria-label="Close navigation menu">×</button>
+      </div>
+      <div class="mobile-more-links">
+        <button type="button" class="mobile-menu-item" data-view="dashboard"><span aria-hidden="true">⌂</span>Today</button>
+        <button type="button" class="mobile-menu-item" data-view="schedule"><span aria-hidden="true">▦</span>Timetable &amp; Planner</button>
+        <button type="button" class="mobile-menu-item" data-view="attendance"><span aria-hidden="true">🛡️</span>Attendance</button>
+        <button type="button" class="mobile-menu-item" data-view="works"><span aria-hidden="true">✓</span>Tasks &amp; Works</button>
+        <button type="button" class="mobile-menu-item" data-view="focus"><span aria-hidden="true">◷</span>Focus Zone</button>
+        <button type="button" class="mobile-menu-item" data-view="grades"><span aria-hidden="true">📘</span>Courses &amp; GPA</button>
+        <button type="button" class="mobile-menu-item" data-view="notes"><span aria-hidden="true">▤</span>Flashnotes</button>
+        <button type="button" class="mobile-menu-item" data-view="recycle-bin"><span aria-hidden="true">🗑️</span>Recycle Bin</button>
+      </div>
+      <button type="button" class="mobile-menu-profile" onclick="toggleMobileMenu(false); openProfileModal()">
+        <span class="profile-avatar" id="mobile-menu-avatar">?</span>
+        <span>
+          <strong id="mobile-menu-user-name">Student profile</strong>
+          <small>Profile &amp; account security</small>
+        </span>
+      </button>
+    </div>
+    <button type="button" class="b-nav-item active" data-view="dashboard" aria-current="page"><span aria-hidden="true">⌂</span><span>Today</span></button>
+    <button type="button" class="b-nav-item" data-view="schedule"><span aria-hidden="true">▦</span><span>Plan</span></button>
+    <button type="button" class="b-nav-item" data-view="works"><span aria-hidden="true">✓</span><span>Tasks</span></button>
+    <button type="button" class="b-nav-item" data-view="focus"><span aria-hidden="true">◷</span><span>Focus</span></button>
+    <button type="button" class="b-nav-item" data-view="notes"><span aria-hidden="true">▤</span><span>Notes</span></button>
+    <button type="button" class="b-nav-item b-nav-more" id="btn-mobile-more" aria-expanded="false" aria-controls="mobile-more-menu" onclick="toggleMobileMenu()"><span aria-hidden="true">•••</span><span>More</span></button>
+  </nav>
+
+  <!-- Confetti Canvas -->
+  <canvas id="confetti-canvas" style="position: fixed; inset: 0; pointer-events: none; z-index: 999;"></canvas>
+
+  <script src="app.js"></script>
+</body>
+</html>

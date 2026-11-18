@@ -59,9 +59,10 @@ PowerPuffBoys/
 ├── client/            Flutter app (all platforms)   ← scaffolded + compiles for web
 ├── server/            Node + Express REST API        ← DONE (see §4)
 ├── docs/
-│   ├── plan.md        full technical plan: ERD + API reference
-│   ├── kickoff.md     this file
-│   └── team-notes.md  session log + conflict drill
+│   ├── plan.md                 full technical plan: ERD + API reference
+│   ├── mobile-ready-backend.md backend/database feature record
+│   ├── kickoff.md              this file
+│   └── team-notes.md           session log + conflict drill
 ├── profiles/          one page per member
 ├── info.txt           the submitted project proposal
 ├── CONTRIBUTING.md    Git/GitHub rulebook — read it
@@ -79,7 +80,7 @@ The **backend is scaffolded and verified working.** Current state:
 - ✅ PostgreSQL schema for the app tables, created automatically on first run.
 - ✅ JWT authentication with hashed passwords; every row is scoped to its owner.
 - ✅ Input validation (zod) and a consistent JSON error shape.
-- ✅ Demo seed data and an end-to-end smoke test — **35/35 checks passing**.
+- ✅ Demo seed data and an end-to-end smoke test — **64/64 checks passing**.
 - ✅ **Flutter client scaffolded** (`client/`) for Android, iOS, Web, Windows, macOS:
   auth, dashboard, schedule, attendance, works, and subjects screens, wired to the API.
   `flutter analyze` is clean, unit tests pass, and the web build succeeds.
@@ -249,6 +250,8 @@ On our Windows machine we can build and verify **Android, Web, and Windows deskt
 |---|---|
 | [`info.txt`](../info.txt) | The submitted project proposal |
 | [`docs/plan.md`](plan.md) | Technical plan — architecture, ERD, full API reference, risks |
+| [`docs/database.md`](database.md) | Migrations, integrity rules, backup/rollback and mobile indexes |
+| [`docs/mobile-ready-backend.md`](mobile-ready-backend.md) | Mobile-ready backend feature record — commits, API contract and verification |
 | [`server/README.md`](../server/README.md) | Backend setup, scripts, endpoint details |
 | [`CONTRIBUTING.md`](../CONTRIBUTING.md) | Branch/commit/PR rules + troubleshooting |
 | [`docs/team-notes.md`](team-notes.md) | Session log + the merge-conflict drill |

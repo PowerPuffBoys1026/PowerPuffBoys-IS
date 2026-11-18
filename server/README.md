@@ -47,13 +47,17 @@ password: demo12345
 | `npm run seed` | Insert demo user, subjects, schedule and works |
 | `npm run db:create` | Create the PostgreSQL database configured in `.env` |
 | `npm run db:init` / `npm run migrate` | Apply pending migrations |
-| `npm test` | Unit + API integration tests on a throwaway database |
+| `npm test` | Unit + API integration + database routine tests on throwaway databases |
 | `npm run smoke` | End-to-end test on an isolated DB/port |
+| `npm run mobile:config` | Print the LAN API URL, `dart-define` flag and firewall/CORS values for a phone |
 
 `npm test` uses Node's built-in test runner. Unit tests cover validation and
 time-zone helpers; API tests create and drop a temporary PostgreSQL database and
 never touch application data. GitHub Actions runs both `npm test` and
 `npm run smoke` against a PostgreSQL service on every push and pull request.
+`test/stored-procedures.test.js` covers the routines in migration 005
+(attendance summary, dashboard classes, due-soon works, attendance marking and
+work status changes) including their ownership checks.
 
 ## API
 
@@ -64,6 +68,7 @@ Every route except `POST /auth/register` and `POST /auth/login` needs
 | Method | Path | Notes |
 |---|---|---|
 | GET | `/health` | Liveness + database check (`503` when PostgreSQL is down) |
+| GET | `/client-config` | Non-secret thresholds, enums and payload limits for clients |
 | POST | `/auth/register` | `{ email, password (8–72), fullName, studentNo?, course? }` |
 | POST | `/auth/login` | `{ email, password }` — rate limited |
 | GET | `/auth/me` | Current user |
@@ -89,6 +94,34 @@ authenticated user, so another user's resource IDs return `404` rather than leak
 **Error shape:** `{ "error": { "message": "…", "details": [ { "path", "message" } ] } }`
 with status codes `400` validation, `401` auth, `404` not found, `409` conflict,
 `413` body too large, `429` too many auth attempts.
+
+## Mobile clients
+
+The same API serves Android, iOS, Web and Desktop — there is no separate mobile
+backend. For a phone on the same Wi-Fi:
+
+1. Run `npm run mobile:config` to get the LAN IPv4 address and the exact
+   `flutter run ... --dart-define=API_BASE_URL=http://<pc-ip>:3000/api` command.
+2. Allow TCP 3000 through Windows Firewall (the script prints the command).
+3. Native apps are not subject to CORS. Flutter Web opened from a phone is:
+   add `http://<pc-ip>:8080` to `CORS_ORIGIN` in `.env` and restart the API.
+4. The Android manifest allows cleartext LAN HTTP for development; use HTTPS
+   for any real deployment.
+
+Endpoints are payload-compatible with the Flutter client already in `client/`:
+JWTs from login/register are stored on the device and sent as
+`Authorization: Bearer <token>`. All rows stay scoped to the authenticated user,
+so phone and desktop sessions cannot read each other's data.
+
+Mobile-specific behaviour:
+
+- Login/register also return `tokenExpiresAt` so a phone can plan a re-login.
+- An expired token produces `401 { error: { code: 'TOKEN_EXPIRED', ... } }`;
+  other bad tokens stay generic. A phone can fetch `/api/client-config` at
+  startup for thresholds, enums and payload limits instead of hard-coding them.
+- `REQUEST_TIMEOUT_MS`, `AUTH_RATE_LIMIT_MAX` and `AUTH_RATE_LIMIT_WINDOW_MS`
+  are tunable in `.env`. Several phones behind one NAT share an IP, so raise
+  the auth limit during a demo if needed.
 
 ## Architecture (MVC)
 
@@ -131,6 +164,10 @@ server/
 ```
 
 ## Data notes
+
+Full migration, backup/rollback and integrity details:
+[`../docs/database.md`](../docs/database.md).
+
 - `attendance_records.date` is a real `date`; schedule times are `time`;
   `school_works.due_at` is `timestamptz`.
 - API dates are `YYYY-MM-DD`; times are `HH:MM` (24h); timestamps are ISO-8601.

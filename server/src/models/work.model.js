@@ -92,20 +92,16 @@ const WorkModel = {
     return result.rows[0] || null;
   },
 
+  /** Change status through the ownership-checking routine, then return the row. */
   updateStatus: async (id, status, userId) => {
-    const result = await db.query(
-      `WITH updated AS (
-         UPDATE school_works w
-            SET status = $1, updated_at = NOW()
-          WHERE w.id = $2 AND w.user_id = $3
-          RETURNING w.*
-       )
-       SELECT u.*, s.code AS subject_code, s.title AS subject_title, s.color
-         FROM updated u
-         LEFT JOIN subjects s ON s.id = u.subject_id`,
-      [status, id, userId],
-    );
-    return result.rows[0] || null;
+    try {
+      await db.query('CALL set_work_status($1, $2, $3, NULL)', [userId, id, status]);
+    } catch (error) {
+      // P0002 means "not found or not owned" — keep the API's 404 contract.
+      if (error.code === 'P0002') return null;
+      throw error;
+    }
+    return WorkModel.findByIdAndUserId(id, userId);
   },
 
   delete: (id, userId) => {

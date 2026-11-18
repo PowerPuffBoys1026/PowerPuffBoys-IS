@@ -5,6 +5,8 @@ This is a solid work of Group 7: Mobile App
 > and the setup guide in one file.
 >
 > **Running or stopping the app? See [`docs/run-and-stop.md`](docs/run-and-stop.md).**
+>
+> **Mobile-ready backend? See [`docs/mobile-ready-backend.md`](docs/mobile-ready-backend.md).**
 
 ---
 
@@ -47,17 +49,20 @@ PowerPuffBoys/
 │   └── PULL_REQUEST_TEMPLATE.md
 ├── docs/
 │   ├── kickoff.md           START HERE — brief + setup guide
+│   ├── mobile-ready-backend.md  backend/database feature record
 │   ├── plan.md              technical plan (ERD + API reference)
 │   └── team-notes.md        shared scratchpad + conflict drill
 ├── server/                  Node + Express REST API (scaffolded + tested)
+├── server/public/           v2 web app (served by the API at http://localhost:3000)
 ├── client/                  Flutter app (all platforms, wired to the API)
 └── profiles/                one page per team member
 ```
 
 ## Current status
 
-Repo scaffolding, the **backend**, and the **Flutter client** are all in place. The
-Node + Express REST API is verified (`npm run smoke` → 35/35 checks passing) with PostgreSQL
-persistence and JWT auth, and the Flutter client (`client/`) is wired to it with login,
-dashboard, schedule, attendance, school-works, and subjects screens (verified on Web).
-See [`docs/kickoff.md`](docs/kickoff.md) to get set up.
+Repo scaffolding, the **backend**, the **Flutter client**, and the **v2 web app** are all in
+place. The Node + Express REST API is verified (`npm run smoke` → 64/64 checks passing) with
+PostgreSQL persistence and JWT auth, and the Flutter client (`client/`) is wired to it with
+login, dashboard, schedule, attendance, school-works, and subjects screens (verified on Web).
+The v2 web app in `server/public/` adds study stats, grades/GPA, attachments, a recycle bin,
+and profile settings. See [`docs/kickoff.md`](docs/kickoff.md) to get set up.

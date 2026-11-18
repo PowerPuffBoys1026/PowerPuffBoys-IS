@@ -28,6 +28,22 @@ The API base URL defaults to `http://localhost:3000/api`. Override it with:
 flutter run -d edge --dart-define=API_BASE_URL=http://192.168.1.10:3000/api
 ```
 
+### Android phone / emulator
+
+On a real phone, `localhost` means the phone itself. Run
+`cd ../server && npm run mobile:config` to print your PC's LAN address and the
+exact command to use:
+
+```bash
+flutter run -d <device-id> --dart-define=API_BASE_URL=http://<pc-ip>:3000/api
+```
+
+The emulator can use `http://10.0.2.2:3000/api` instead. The phone and PC must
+be on the same Wi-Fi, and port 3000 must be allowed through Windows Firewall.
+`android/app/src/main/AndroidManifest.xml` already grants `INTERNET` and allows
+cleartext LAN HTTP for development — use HTTPS for a real deployment. See
+[`../docs/run-and-stop.md`](../docs/run-and-stop.md) for the full checklist.
+
 ## Checks
 
 ```bash

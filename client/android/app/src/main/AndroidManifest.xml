@@ -1,8 +1,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Needed in release/profile builds too; the debug manifest alone is not enough. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- LAN development uses http://<pc-ip>:3000; switch to HTTPS for production. -->
     <application
         android:label="classmate"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="true">
         <activity
             android:name=".MainActivity"
             android:exported="true"

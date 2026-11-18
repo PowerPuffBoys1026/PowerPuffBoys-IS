@@ -1,3 +1,5 @@
+const path = require('node:path');
+const fs = require('node:fs');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -13,6 +15,11 @@ const attendanceRoutes = require('./routes/attendance');
 const workRoutes = require('./routes/works');
 const dashboardRoutes = require('./routes/dashboard');
 const noteRoutes = require('./routes/notes');
+const studyRoutes = require('./routes/study');
+const gradeRoutes = require('./routes/grades');
+const attachmentRoutes = require('./routes/attachments');
+const recycleBinRoutes = require('./routes/recycle_bin');
+const clientConfigRoutes = require('./routes/client-config');
 
 const app = express();
 
@@ -25,13 +32,21 @@ app.use(
     origin: config.corsOrigins.includes('*') ? true : config.corsOrigins,
   }),
 );
-app.use(express.json({ limit: '1mb' }));
+app.use(express.json({ limit: config.jsonBodyLimitBytes }));
+
+// v2 web frontend (served from server/public)
+const publicPath = path.join(__dirname, '..', 'public');
+if (fs.existsSync(publicPath)) {
+  app.use(express.static(publicPath));
+}
 
 const API_ENDPOINTS = [
   { method: 'GET', path: '/api/health', description: 'Health check (API + database)' },
+  { method: 'GET', path: '/api/client-config', description: 'Non-secret client limits and enums' },
   { method: 'POST', path: '/api/auth/register', description: 'Create an account' },
   { method: 'POST', path: '/api/auth/login', description: 'Log in and get a JWT' },
-  { method: 'GET', path: '/api/auth/me', description: 'Current user' },
+  { method: 'GET/PUT', path: '/api/auth/me', description: 'Read / update the current user' },
+  { method: 'PUT', path: '/api/auth/me/password', description: 'Change the current password' },
   { method: 'GET/POST', path: '/api/subjects', description: 'List / create subjects' },
   { method: 'GET/PUT/DELETE', path: '/api/subjects/:id', description: 'Read / update / delete a subject' },
   { method: 'GET/POST', path: '/api/schedule', description: 'List / create schedule slots' },
@@ -45,6 +60,14 @@ const API_ENDPOINTS = [
   { method: 'GET/POST', path: '/api/notes', description: 'List / create notes' },
   { method: 'GET/PUT/DELETE', path: '/api/notes/:id', description: 'Read / update / delete a note' },
   { method: 'PATCH', path: '/api/notes/:id/pin', description: 'Toggle the pinned flag' },
+  { method: 'GET/POST', path: '/api/study/sessions', description: 'List / log study sessions' },
+  { method: 'GET', path: '/api/study/stats', description: 'Focus streak and study statistics' },
+  { method: 'GET/POST', path: '/api/grades', description: 'List / create grade components' },
+  { method: 'GET', path: '/api/grades/summary', description: 'GPA and per-course grade summary' },
+  { method: 'GET/POST', path: '/api/attachments/:resourceType/:resourceId', description: 'List / upload attachments' },
+  { method: 'GET', path: '/api/attachments/:id/download', description: 'Download an attachment' },
+  { method: 'GET', path: '/api/recycle-bin', description: 'List recycled items (30-day retention)' },
+  { method: 'POST', path: '/api/recycle-bin/:id/restore', description: 'Restore a recycled item' },
   { method: 'GET', path: '/api/dashboard/today', description: "Today's classes, due works and warnings" },
 ];
 
@@ -143,6 +166,19 @@ app.use('/api/attendance', attendanceRoutes);
 app.use('/api/works', workRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/notes', noteRoutes);
+app.use('/api/study', studyRoutes);
+app.use('/api/grades', gradeRoutes);
+app.use('/api/attachments', attachmentRoutes);
+app.use('/api/recycle-bin', recycleBinRoutes);
+app.use('/api/client-config', clientConfigRoutes);
+
+// SPA fallback for v2 web frontend (non-API GET requests)
+app.get(/^(?!\/api).*/, (req, res, next) => {
+  if (req.method !== 'GET') return next();
+  const indexFile = path.join(publicPath, 'index.html');
+  if (fs.existsSync(indexFile)) return res.sendFile(indexFile);
+  return next();
+});
 
 app.use(notFound);
 app.use(errorHandler);

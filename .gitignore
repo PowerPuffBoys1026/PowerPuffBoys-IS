@@ -59,9 +59,12 @@ target/
 Thumbs.db
 desktop.ini
 
-# ---- Local database ----  ClassMate SQLite (server-side, never commit)
+# ---- Local database ----  ClassMate SQLite/runtime data (server-side, never commit)
 server/data/*.db
 server/data/*.db-journal
+server/data/*.db-shm
+server/data/*.db-wal
+server/data/uploads/
 *.sqlite
 
 # ---- Logs & OS cruft ----

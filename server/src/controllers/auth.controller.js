@@ -16,7 +16,20 @@ const registerSchema = z.object({
     .max(72, 'Password must be at most 72 characters'),
   fullName: z.string().trim().min(1, 'Full name is required').max(120),
   studentNo: z.string().trim().max(40).optional(),
+  yearLevel: z.string().trim().max(60).optional(),
   course: z.string().trim().max(120).optional(),
+});
+
+const profileUpdateSchema = z.object({
+  fullName: z.string().trim().min(1, 'Full name is required'),
+  studentNo: z.string().trim().nullish(),
+  course: z.string().trim().nullish(),
+  yearLevel: z.string().trim().nullish(),
+});
+
+const passwordUpdateSchema = z.object({
+  currentPassword: z.string().min(1, 'Current password is required'),
+  newPassword: z.string().min(8, 'New password must be at least 8 characters').max(72),
 });
 
 const loginSchema = z.object({
@@ -26,6 +39,17 @@ const loginSchema = z.object({
 
 function signToken(user) {
   return jwt.sign({ sub: String(user.id) }, config.jwtSecret, { expiresIn: config.jwtExpiresIn });
+}
+
+/** Login/register payload; expiry lets mobile clients plan a silent re-login. */
+function authResponse(user) {
+  const token = signToken(user);
+  const decoded = jwt.decode(token);
+  return {
+    token,
+    tokenExpiresAt: new Date(decoded.exp * 1000).toISOString(),
+    user: publicUser(user),
+  };
 }
 
 const AuthController = {
@@ -44,9 +68,10 @@ const AuthController = {
       fullName: data.fullName,
       studentNo: data.studentNo ?? null,
       course: data.course ?? null,
+      yearLevel: data.yearLevel ?? null,
     });
 
-    res.status(201).json({ token: signToken(user), user: publicUser(user) });
+    res.status(201).json(authResponse(user));
   },
 
   login: async (req, res) => {
@@ -57,13 +82,37 @@ const AuthController = {
       throw new HttpError(401, 'Invalid email or password');
     }
 
-    res.json({ token: signToken(user), user: publicUser(user) });
+    res.json(authResponse(user));
   },
 
   me: async (req, res) => {
     const user = await UserModel.findById(req.userId);
     if (!user) throw new HttpError(404, 'User not found');
     res.json({ data: publicUser(user) });
+  },
+
+  updateMe: async (req, res) => {
+    const data = validate(profileUpdateSchema, req.body);
+    const user = await UserModel.updateProfile(req.userId, {
+      fullName: data.fullName,
+      studentNo: data.studentNo || null,
+      course: data.course || null,
+      yearLevel: data.yearLevel || null,
+    });
+    if (!user) throw new HttpError(404, 'User not found');
+    res.json({ data: publicUser(user) });
+  },
+
+  updatePassword: async (req, res) => {
+    const data = validate(passwordUpdateSchema, req.body);
+    const user = await UserModel.findById(req.userId);
+    if (!user) throw new HttpError(404, 'User not found');
+    if (!(await bcrypt.compare(data.currentPassword, user.password_hash))) {
+      throw new HttpError(400, 'Current password is incorrect');
+    }
+    const passwordHash = await bcrypt.hash(data.newPassword, 10);
+    await UserModel.updatePasswordHash(req.userId, passwordHash);
+    res.json({ data: { success: true } });
   },
 };
 

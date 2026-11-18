@@ -41,9 +41,9 @@ class _AnimatedGlassBackgroundState extends State<AnimatedGlassBackground>
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Color(0xFF060814),
-                Color(0xFF0B1026),
-                Color(0xFF10162B),
+                Color(0xFF0C1215),
+                Color(0xFF131E21),
+                Color(0xFF182528),
               ],
             ),
           ),
@@ -67,8 +67,8 @@ class _AnimatedGlassBackgroundState extends State<AnimatedGlassBackground>
                   child: _Orb(
                     size: 320,
                     colors: [
-                      const Color(0xFF7B61FF).withValues(alpha: 0.25),
-                      const Color(0xFF7B61FF).withValues(alpha: 0.05),
+                      const Color(0xFFA51C30).withValues(alpha: 0.22),
+                      const Color(0xFFA51C30).withValues(alpha: 0.04),
                     ],
                   ),
                 ),
@@ -78,8 +78,8 @@ class _AnimatedGlassBackgroundState extends State<AnimatedGlassBackground>
                   child: _Orb(
                     size: 380,
                     colors: [
-                      const Color(0xFF22D3EE).withValues(alpha: 0.18),
-                      const Color(0xFF22D3EE).withValues(alpha: 0.04),
+                      const Color(0xFF53C99A).withValues(alpha: 0.12),
+                      const Color(0xFF53C99A).withValues(alpha: 0.03),
                     ],
                   ),
                 ),
@@ -89,8 +89,8 @@ class _AnimatedGlassBackgroundState extends State<AnimatedGlassBackground>
                   child: _Orb(
                     size: 420,
                     colors: [
-                      const Color(0xFFA78BFA).withValues(alpha: 0.16),
-                      const Color(0xFFA78BFA).withValues(alpha: 0.03),
+                      const Color(0xFF78858B).withValues(alpha: 0.14),
+                      const Color(0xFF78858B).withValues(alpha: 0.03),
                     ],
                   ),
                 ),
