@@ -7,6 +7,8 @@ This is a solid work of Group 7: Mobile App
 > **Running or stopping the app? See [`docs/run-and-stop.md`](docs/run-and-stop.md).**
 >
 > **Mobile-ready backend? See [`docs/mobile-ready-backend.md`](docs/mobile-ready-backend.md).**
+>
+> **Milestone integrated into this branch? See [`docs/mobile-backend-migration.md`](docs/mobile-backend-migration.md).**
 
 ---
 
@@ -49,7 +51,10 @@ PowerPuffBoys/
 │   └── PULL_REQUEST_TEMPLATE.md
 ├── docs/
 │   ├── kickoff.md           START HERE — brief + setup guide
+│   ├── run-and-stop.md      running, stopping and phone/LAN access
+│   ├── database.md          schema, migrations, backup and rollback
 │   ├── mobile-ready-backend.md  backend/database feature record
+│   ├── mobile-backend-migration.md  how the milestone was integrated into main
 │   ├── plan.md              technical plan (ERD + API reference)
 │   └── team-notes.md        shared scratchpad + conflict drill
 ├── server/                  Node + Express REST API (scaffolded + tested)
