@@ -24,6 +24,8 @@ try {
   throw new Error(`APP_TIMEZONE is not a valid IANA time zone: ${appTimezone}`);
 }
 
+const path = require('node:path');
+
 const config = {
   port: Number(process.env.PORT) || 3000,
   jwtSecret,
@@ -48,6 +50,21 @@ const config = {
   pgConnectTimeoutMs: Number(process.env.PGCONNECT_TIMEOUT_MS) || 5000,
   pgStatementTimeoutMs: Number(process.env.PGSTATEMENT_TIMEOUT_MS) || 10000,
   attendanceThreshold: Number(process.env.ATTENDANCE_THRESHOLD) || 20,
+  uploadDir: process.env.UPLOAD_DIR
+    ? path.resolve(process.cwd(), process.env.UPLOAD_DIR)
+    : path.join(__dirname, '..', 'data', 'uploads'),
+
+  // Mobile-friendly limits. Phones on flaky connections benefit from a shorter
+  // request timeout; shared Wi-Fi might need a higher auth limit per public IP.
+  requestTimeoutMs: Math.max(1000, Number(process.env.REQUEST_TIMEOUT_MS) || 30_000),
+  authRateLimitMax: Math.max(1, Number(process.env.AUTH_RATE_LIMIT_MAX) || 20),
+  authRateLimitWindowMs: Math.max(
+    1000,
+    Number(process.env.AUTH_RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
+  ),
+  jsonBodyLimitBytes: 1024 * 1024,
+  attachmentMaxBytes: 20 * 1024 * 1024,
+  maxPageSize: 100,
 };
 
 module.exports = config;

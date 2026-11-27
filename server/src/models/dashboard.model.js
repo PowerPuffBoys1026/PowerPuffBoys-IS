@@ -8,26 +8,20 @@ const DashboardModel = {
     const dayOfWeek = dayOfWeekInTimeZone(date);
     const today = dateInTimeZone(date);
 
+    // Migration 005 owns these queries so the API and database agree on
+    // "today", due-soon and ordering rules. Aliases keep the existing view
+    // contract unchanged.
     const classesResult = await db.query(
-      `SELECT sc.id, sc.start_time, sc.end_time, sc.room, sc.modality,
-              s.id AS subject_id, s.code, s.title, s.color
-         FROM schedule_slots sc
-         JOIN subjects s ON s.id = sc.subject_id
-        WHERE s.user_id = $1 AND sc.day_of_week = $2
-        ORDER BY sc.start_time`,
+      `SELECT c.slot_id AS id, c.start_time, c.end_time, c.room, c.modality,
+              c.subject_id, c.code, c.title, c.color
+         FROM get_dashboard_classes($1, $2) c`,
       [userId, dayOfWeek],
     );
 
     const dueSoonResult = await db.query(
-      `SELECT w.id, w.title, w.type, w.due_at, w.priority, w.status,
-              s.code AS subject_code, s.color
-         FROM school_works w
-         LEFT JOIN subjects s ON s.id = w.subject_id
-        WHERE w.user_id = $1
-          AND w.status != 'done'
-          AND w.due_at IS NOT NULL
-          AND w.due_at::date <= $2::date + INTERVAL '7 days'
-        ORDER BY w.due_at`,
+      `SELECT w.work_id AS id, w.title, w.work_type AS type, w.due_at,
+              w.priority, w.status, w.subject_code, w.color
+         FROM get_due_soon_works($1, $2, 7) w`,
       [userId, today],
     );
 

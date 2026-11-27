@@ -48,6 +48,10 @@ async function start() {
       console.log(`Health check:  http://localhost:${config.port}/api/health`);
     });
 
+    // Bound slow mobile requests instead of letting them hold a connection.
+    server.requestTimeout = config.requestTimeoutMs;
+    server.headersTimeout = config.requestTimeoutMs + 5000;
+
     installShutdownHandlers(server);
   } catch (err) {
     console.error('Failed to start server:', err);

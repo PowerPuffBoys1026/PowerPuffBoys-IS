@@ -1,6 +1,9 @@
 const db = require('../db');
 
 const AttendanceModel = {
+  // The mark_attendance procedure (migration 005) is an upsert for direct DB
+  // callers. The API keeps its explicit duplicate check so clients get 409
+  // instead of a silently overwritten record.
   subjectExistsAndOwned: async (subjectId, userId) => {
     const result = await db.query('SELECT id FROM subjects WHERE id = $1 AND user_id = $2', [subjectId, userId]);
     return result.rowCount > 0;
