@@ -12,14 +12,15 @@ import 'server_addresses_fallback.dart'
 class ServerConfig {
   static const _overrideKey = 'classmate_api_base_url';
   static const _probeTimeout = Duration(milliseconds: 400);
+  static const _manualTimeout = Duration(seconds: 3);
   static const _batchSize = 48;
 
-  /// Stored manual override → LAN discovery → build-time fallback.
+  /// Stored manual override → build-time fallback. LAN discovery is a separate,
+  /// user-confirmed action in Server settings, so startup never silently
+  /// connects to an unverified host or blocks the UI.
   static Future<String> resolve() async {
     final override = await loadOverride();
-    if (override != null) return override;
-    final discovered = await discover();
-    return discovered ?? AppConfig.apiBaseUrl;
+    return override ?? AppConfig.apiBaseUrl;
   }
 
   static Future<String?> loadOverride() async {
@@ -84,7 +85,11 @@ class ServerConfig {
     final urls = candidates.toList();
     for (var offset = 0; offset < urls.length; offset += _batchSize) {
       final batch = urls.skip(offset).take(_batchSize).toList();
-      final results = await Future.wait(batch.map(isReachable));
+      final results = await Future.wait(
+        batch.map(
+          (url) => isReachable(url, timeout: _probeTimeout),
+        ),
+      );
       for (var index = 0; index < results.length; index++) {
         if (results[index]) return batch[index];
       }
@@ -92,10 +97,13 @@ class ServerConfig {
     return null;
   }
 
-  static Future<bool> isReachable(String baseUrl) async {
+  static Future<bool> isReachable(
+    String baseUrl, {
+    Duration timeout = _manualTimeout,
+  }) async {
     try {
       final uri = Uri.parse('${normalizeBaseUrl(baseUrl)}/health');
-      final response = await http.get(uri).timeout(_probeTimeout);
+      final response = await http.get(uri).timeout(timeout);
       if (response.statusCode != 200) return false;
       final decoded = jsonDecode(response.body);
       return decoded is Map<String, dynamic> &&

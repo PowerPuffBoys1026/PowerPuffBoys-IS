@@ -217,14 +217,14 @@ app now resolves the API at startup instead of baking one PC IP into the build:
    flutter run -d <device-id>
    ```
 
-   On launch the app scans the device's current LAN subnet for a ClassMate
-   `/api/health` response. The Android emulator's `10.0.2.2` is found the same
-   way; no special address is needed.
-4. If auto-detect is unavailable, tap **Server settings** on the login screen,
-   enter the address from `npm run mobile:config` (for example
-   `http://192.168.5.234:3000/api`), test it, and save. The override is stored
+   The app opens immediately; it does not silently connect to a LAN host on
+   startup. On first use (and after Wi-Fi changes), tap **Server settings** on
+   the login screen, then tap **Auto-detect on this Wi-Fi**.
+4. Review the address the app found (or enter the one from
+   `npm run mobile:config`, for example `http://192.168.5.234:3000/api`), test
+   it, and tap **Save and use this server** to confirm. The override is stored
    on the device, so rebuilding is not required when the Wi-Fi changes; use
-   **Reset to build default** to clear it.
+   **Reset to build default** to clear it and sign out.
 5. Confirm from the phone browser: `http://<pc-ip>:3000/api/health`.
 6. If you open the **Web** client on the phone, add `http://<pc-ip>:8080` to
    `CORS_ORIGIN` in `server/.env`, restart the API, then set the same base URL in
@@ -236,7 +236,8 @@ Notes:
   hard-coding an old IP such as `192.168.1.24`; the PC address can change after
   reconnecting to Wi-Fi.
 - Both devices must be on the same Wi-Fi and no VPN may be active. If the PC IP
-  changed, re-run `npm run mobile:config` or let auto-detect find it.
+  changed, re-run `npm run mobile:config` or use **Auto-detect on this Wi-Fi**
+  and confirm the new address in Server settings.
 - The Android manifest allows `INTERNET` and cleartext LAN HTTP in development;
   switch to HTTPS before any real deployment.
 - iOS builds require macOS/Xcode and cannot be verified on this Windows machine.

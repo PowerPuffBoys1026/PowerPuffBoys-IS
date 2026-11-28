@@ -89,12 +89,13 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
   }
 
   Future<void> _reset() async {
+    final navigator = Navigator.of(context);
     await ServerConfig.clearOverride();
     if (!mounted) return;
     final baseUrl = ServerConfig.normalizeBaseUrl(AppConfig.apiBaseUrl);
     _controller.text = baseUrl;
     context.read<Api>().baseUrl = baseUrl;
-    _say('Reset to the build default. Auto-detect will run on next launch.');
+    navigator.pop(true);
   }
 
   @override
@@ -113,9 +114,9 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
               ),
               const SizedBox(height: 8),
               const Text(
-                'The phone and the PC must be on the same Wi-Fi. The app '
-                'auto-detects the PC on launch; you can set it manually here '
-                'if the network changes or auto-detect is blocked.',
+                'The phone and the PC must be on the same Wi-Fi. Use '
+                'Auto-detect below to find the PC, then confirm the address '
+                'before the app will use it. You can also enter it manually.',
               ),
               const SizedBox(height: 24),
               TextField(

@@ -214,9 +214,9 @@ class Api {
   Future<Note> createNote({String? title, String? content, bool isPinned = false, String? color, String? tags}) async {
     final body = <String, dynamic>{
       if (title != null && title.isNotEmpty) 'title': title,
-      if (content != null) 'content': content,
+      'content': ?content,
       'isPinned': isPinned,
-      if (color != null) 'color': color,
+      'color': ?color,
       if (tags != null && tags.isNotEmpty) 'tags': tags,
     };
     final res = await _client.post('/notes', body: body);
@@ -225,11 +225,11 @@ class Api {
 
   Future<Note> updateNote(int id, {String? title, String? content, bool? isPinned, String? color, String? tags}) async {
     final body = <String, dynamic>{
-      if (title != null) 'title': title,
-      if (content != null) 'content': content,
-      if (isPinned != null) 'isPinned': isPinned,
-      if (color != null) 'color': color,
-      if (tags != null) 'tags': tags,
+      'title': ?title,
+      'content': ?content,
+      'isPinned': ?isPinned,
+      'color': ?color,
+      'tags': ?tags,
     };
     final res = await _client.put('/notes/$id', body: body);
     return Note.fromJson(res['data'] as Map<String, dynamic>);
