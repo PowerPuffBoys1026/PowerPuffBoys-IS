@@ -199,31 +199,45 @@ Notes:
 
 ### Test on an Android phone (mobile-first)
 
-`localhost` in the Flutter client points at the phone itself, not your PC. Use
-the PC's LAN address instead:
+`localhost` in the Flutter client points at the phone itself, not your PC. The
+app now resolves the API at startup instead of baking one PC IP into the build:
 
-1. In `server/`, run `npm run mobile:config`. It prints your LAN IPv4 address,
-   the exact `--dart-define` flag to use, the phone health-check URL, and the
+1. In `server/`, run `npm run dev` and keep it running. Run `npm run mobile:config`
+   in a second terminal — it prints the current LAN IPv4 address and the
    Windows Firewall command.
 2. Allow port 3000 through Windows Firewall once (the script prints the
-   command; see also §3), and keep the API running with `npm run dev`.
-3. Enable USB debugging on the phone, connect it, then run:
+   command; see also §3). Without this rule the phone gets `Connection timed out
+   (errno = 110)` even with the correct IP.
+3. Enable USB debugging on the phone, connect it, then run **without** a
+   hard-coded API address:
 
    ```powershell
    cd client
    flutter devices
-   flutter run -d <device-id> --dart-define=API_BASE_URL=http://<pc-ip>:3000/api
+   flutter run -d <device-id>
    ```
 
-   Replace `<pc-ip>` with the address from step 1. On the Android emulator use
-   `http://10.0.2.2:3000/api` instead.
-4. Confirm from the phone browser: `http://<pc-ip>:3000/api/health`.
-5. If you open the **Web** client on the phone, add `http://<pc-ip>:8080` to
-   `CORS_ORIGIN` in `server/.env`, restart the API, then run with
-   `flutter run -d chrome --web-port 8080 --dart-define=API_BASE_URL=http://<pc-ip>:3000/api`.
+   The app opens immediately; it does not silently connect to a LAN host on
+   startup. On first use (and after Wi-Fi changes), tap **Server settings** on
+   the login screen, then tap **Auto-detect on this Wi-Fi**.
+4. Review the address the app found (or enter the one from
+   `npm run mobile:config`, for example `http://192.168.5.234:3000/api`), test
+   it, and tap **Save and use this server** to confirm. The override is stored
+   on the device, so rebuilding is not required when the Wi-Fi changes; use
+   **Reset to build default** to clear it and sign out.
+5. Confirm from the phone browser: `http://<pc-ip>:3000/api/health`.
+6. If you open the **Web** client on the phone, add `http://<pc-ip>:8080` to
+   `CORS_ORIGIN` in `server/.env`, restart the API, then set the same base URL in
+   the Web client's Server settings screen (browsers cannot scan the LAN).
 
 Notes:
 
+- `API_BASE_URL` via `--dart-define` is now only a last-resort fallback. Avoid
+  hard-coding an old IP such as `192.168.1.24`; the PC address can change after
+  reconnecting to Wi-Fi.
+- Both devices must be on the same Wi-Fi and no VPN may be active. If the PC IP
+  changed, re-run `npm run mobile:config` or use **Auto-detect on this Wi-Fi**
+  and confirm the new address in Server settings.
 - The Android manifest allows `INTERNET` and cleartext LAN HTTP in development;
   switch to HTTPS before any real deployment.
 - iOS builds require macOS/Xcode and cannot be verified on this Windows machine.

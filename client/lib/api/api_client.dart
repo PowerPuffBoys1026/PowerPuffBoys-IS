@@ -21,10 +21,22 @@ class ApiException implements Exception {
 class ApiClient {
   ApiClient({http.Client? client, String? baseUrl})
       : _client = client ?? http.Client(),
-        _baseUrl = baseUrl ?? AppConfig.apiBaseUrl;
+        _baseUrl = _clean(baseUrl ?? AppConfig.apiBaseUrl);
 
   final http.Client _client;
-  final String _baseUrl;
+  String _baseUrl;
+
+  String get baseUrl => _baseUrl;
+
+  set baseUrl(String value) => _baseUrl = _clean(value);
+
+  static String _clean(String value) {
+    var url = value.trim();
+    while (url.endsWith('/')) {
+      url = url.substring(0, url.length - 1);
+    }
+    return url;
+  }
 
   String? token;
 

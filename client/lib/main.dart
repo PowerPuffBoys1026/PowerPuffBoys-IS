@@ -5,6 +5,7 @@ import 'api/api.dart';
 import 'api/api_client.dart';
 import 'screens/home_shell.dart';
 import 'screens/login_screen.dart';
+import 'services/server_config.dart';
 import 'state/app_state.dart';
 import 'state/auth_state.dart';
 import 'state/token_store.dart';
@@ -12,8 +13,10 @@ import 'state/notes_state.dart';
 import 'theme.dart';
 import 'widgets/animated_glass_background.dart';
 
-void main() {
-  final api = Api(ApiClient());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final baseUrl = await ServerConfig.resolve();
+  final api = Api(ApiClient(baseUrl: baseUrl));
   runApp(ClassMateApp(
     api: api,
     auth: AuthState(api, TokenStore()),
