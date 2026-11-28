@@ -3,8 +3,10 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../api/api.dart';
 import '../state/auth_state.dart';
 import 'register_screen.dart';
+import 'server_settings_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -162,6 +164,33 @@ class _LoginScreenState extends State<LoginScreen> {
                                           );
                                         },
                                   child: const Text('Create an account'),
+                                ),
+                                const SizedBox(height: 4),
+                                TextButton.icon(
+                                  onPressed: auth.busy
+                                      ? null
+                                      : () async {
+                                          final baseUrl = context.read<Api>().baseUrl;
+                                          final authState = context.read<AuthState>();
+                                          final navigator = Navigator.of(context);
+                                          final changed = await navigator.push<bool>(
+                                            MaterialPageRoute(
+                                              builder: (_) => ServerSettingsScreen(
+                                                currentBaseUrl: baseUrl,
+                                              ),
+                                            ),
+                                          );
+                                          if (changed == true) authState.clearError();
+                                        },
+                                  icon: const Icon(Icons.settings_ethernet_outlined),
+                                  label: const Text('Server settings'),
+                                ),
+                                Text(
+                                  context.read<Api>().baseUrl,
+                                  textAlign: TextAlign.center,
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                        color: Colors.white.withValues(alpha: 0.45),
+                                      ),
                                 ),
                               ],
                             ),

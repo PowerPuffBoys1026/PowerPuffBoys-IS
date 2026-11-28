@@ -19,6 +19,10 @@ class Api {
 
   final ApiClient _client;
 
+  String get baseUrl => _client.baseUrl;
+
+  set baseUrl(String value) => _client.baseUrl = value;
+
   set token(String? value) => _client.token = value;
 
   // ---- Auth ----------------------------------------------------------------

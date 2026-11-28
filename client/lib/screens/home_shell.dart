@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../api/api.dart';
 import '../state/auth_state.dart';
 import 'attendance_screen.dart';
 import 'dashboard_screen.dart';
 import 'notes_screen.dart';
 import 'schedule_screen.dart';
+import 'server_settings_screen.dart';
 import 'subjects_screen.dart';
 import 'works_screen.dart';
 
@@ -54,6 +56,21 @@ class _HomeShellState extends State<HomeShell> {
               padding: const EdgeInsets.symmetric(horizontal: 8),
               child: Center(child: Text(auth.user!.fullName)),
             ),
+          IconButton(
+            tooltip: 'Server settings',
+            icon: const Icon(Icons.settings_ethernet_outlined),
+            onPressed: () async {
+              final baseUrl = context.read<Api>().baseUrl;
+              final authState = context.read<AuthState>();
+              final navigator = Navigator.of(context);
+              final changed = await navigator.push<bool>(
+                MaterialPageRoute(
+                  builder: (_) => ServerSettingsScreen(currentBaseUrl: baseUrl),
+                ),
+              );
+              if (changed == true) authState.logout();
+            },
+          ),
           IconButton(
             tooltip: 'Sign out',
             icon: const Icon(Icons.logout),

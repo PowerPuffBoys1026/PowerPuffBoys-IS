@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 
 import '../api/api.dart';
 import '../api/api_client.dart';
-import '../config.dart';
 import '../models/user.dart';
 import 'token_store.dart';
 
@@ -72,7 +71,7 @@ class AuthState extends ChangeNotifier {
       error = e.message;
       return false;
     } catch (e) {
-      error = 'Could not reach the server (${e.runtimeType}: $e). API: ${AppConfig.apiBaseUrl}';
+      error = 'Could not reach the server (${e.runtimeType}: $e). API: ${_api.baseUrl}';
       return false;
     } finally {
       busy = false;
