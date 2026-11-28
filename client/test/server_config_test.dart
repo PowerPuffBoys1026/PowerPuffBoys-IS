@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:classmate/services/server_config.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -32,6 +34,26 @@ void main() {
       expect(hosts.first, '192.168.5.1');
       expect(hosts.last, '192.168.5.254');
       expect(hosts, isNot(contains('192.168.5.234')));
+    });
+  });
+
+  group('ServerConfig.isReachable', () {
+    test('manual probe waits longer than a discovery probe', () async {
+      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      addTearDown(server.close);
+      server.listen((request) async {
+        await Future<void>.delayed(const Duration(milliseconds: 800));
+        request.response.headers.contentType = ContentType.json;
+        request.response.write('{"service":"classmate-api"}');
+        await request.response.close();
+      });
+
+      final url = 'http://127.0.0.1:${server.port}/api';
+      expect(await ServerConfig.isReachable(url), isTrue);
+      expect(
+        await ServerConfig.isReachable(url, timeout: const Duration(milliseconds: 100)),
+        isFalse,
+      );
     });
   });
 }

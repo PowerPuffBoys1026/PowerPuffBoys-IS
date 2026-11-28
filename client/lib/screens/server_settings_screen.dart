@@ -116,7 +116,9 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
               const Text(
                 'The phone and the PC must be on the same Wi-Fi. Use '
                 'Auto-detect below to find the PC, then confirm the address '
-                'before the app will use it. You can also enter it manually.',
+                'before the app will use it. You can also enter it manually. '
+                'Only save an address you trust: plain HTTP can expose your '
+                'password on shared Wi-Fi.',
               ),
               const SizedBox(height: 24),
               TextField(
